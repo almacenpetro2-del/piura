@@ -1,30 +1,21 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login.html">
     <title>Recicladora - Cargando...</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background: #2ecc71;
-            color: white;
-        }
-        .loader {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-        a {
-            color: white;
-        }
+        body { font-family: Arial; text-align: center; padding: 50px; background: #2ecc71; color: white; }
+        .loader { margin-top: 20px; }
+        a { color: white; }
     </style>
+    <script>
+        // Redirección forzada a login.html
+        window.location.replace("/login.html");
+    </script>
 </head>
 <body>
     <h1>♻️ RECICLADORA</h1>
-    <p>Cargando la aplicación...</p>
+    <p>Redirigiendo a la aplicación...</p>
     <div class="loader">⏳</div>
-    <p>Si no eres redirigido, <a href="login.html">haz clic aquí</a></p>
+    <p>Si no eres redirigido, <a href="/login.html">haz clic aquí</a></p>
 </body>
 </html>
