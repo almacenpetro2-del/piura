@@ -1,73 +1,37 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khloe Global</title>
+    <title>Recicladora - Proyecto de Reciclaje</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            background: #f1f5f9;
-            display: flex; align-items: center; justify-content: center;
-            min-height: 100vh;
-        }
-        .loader {
+            font-family: Arial, sans-serif;
             text-align: center;
-            color: #475569;
+            padding: 50px;
+            background: #4CAF50;
+            color: white;
         }
-        .spinner {
-            width: 48px; height: 48px;
-            border: 4px solid #e2e8f0;
-            border-top-color: #059669;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
+        .contenedor {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            margin: auto;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        h1 {
+            color: #4CAF50;
+        }
     </style>
 </head>
 <body>
-    <div class="loader">
-        <div class="spinner"></div>
-        <p>Cargando...</p>
+    <div class="contenedor">
+        <h1>♻️ RECICLADORA</h1>
+        <p>Bienvenido a mi proyecto de reciclaje</p>
+        <p>🌱 Cuidando el medio ambiente, un residuo a la vez</p>
+        <p><strong>¡Despliegue exitoso en Vercel!</strong></p>
+        <p>📅 28 de mayo de 2026</p>
     </div>
-    <script src="config.js"></script>
-    <script>
-        (async () => {
-            const token = getAccessToken();
-            if (!token) {
-                window.location.replace('login.html');
-                return;
-            }
-            try {
-                const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-                    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    window.location.replace('app.html');
-                } else {
-                    const session = getSession();
-                    if (session && session.refresh_token) {
-                        const rf = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-                            method: 'POST',
-                            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ refresh_token: session.refresh_token })
-                        });
-                        if (rf.ok) {
-                            const ns = await rf.json();
-                            setSession(ns);
-                            window.location.replace('app.html');
-                            return;
-                        }
-                    }
-                    clearSession();
-                    window.location.replace('login.html');
-                }
-            } catch (e) {
-                window.location.replace('login.html');
-            }
-        })();
-    </script>
 </body>
 </html>
