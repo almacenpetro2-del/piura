@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maestros — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --danger-light: #fef2f2;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-brand svg { width: 30px; height: 30px; color: var(--primary); }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        /* MAIN */
+        .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+
+        /* TABS */
+        .tabs { display: flex; gap: 0; margin-bottom: 24px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .tab { flex: 1; padding: 14px 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-light); background: var(--card); border: none; transition: all 0.2s; }
+        .tab.active { color: #fff; background: var(--primary); }
+        .tab:hover:not(.active) { background: #f8fafc; }
+
+        /* CARD */
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1.05rem; font-weight: 600; }
+        .card-header-right { display: flex; gap: 8px; align-items: center; }
+
+        /* BUTTONS */
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+        .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        /* TABLE */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+        .actions { display: flex; gap: 4px; }
+
+        /* INPUT / SEARCH */
+        .input-search { padding: 8px 14px 8px 36px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; width: 220px; transition: all 0.2s; font-family: inherit; }
+        .input-search:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
+        .input-search-wrap { position: relative; }
+        .input-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 0.85rem; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: all 0.2s; }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal { background: var(--card); border-radius: var(--radius); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
+        .modal-close:hover { color: var(--text); }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: var(--text); }
+        .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; transition: all 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+
+        /* CONFIRM DIALOG */
+        .confirm-text { font-size: 0.95rem; color: var(--text); margin-bottom: 8px; }
+
+        /* EMPTY */
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        /* TOAST */
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* RESPONSIVE */
+        @media (max-width: 600px) {
+            .main { padding: 16px; }
+            .card-header { flex-direction: column; align-items: stretch; }
+            .card-header-right { flex-direction: column; }
+            .input-search { width: 100%; }
+            .form-row { flex-direction: column; }
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Maestros</h1>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" data-section="chatarra">Tipos de Chatarra</button>
+            <button class="tab" data-section="clientes">Clientes / Proveedores</button>
+        </div>
+
+        <!-- ===== TIPOS DE CHATARRA ===== -->
+        <div class="section-content active" id="section-chatarra">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Listado de Materiales</h3>
+                    <div class="card-header-right">
+                        <div class="input-search-wrap">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="input-search" id="searchChat" placeholder="Buscar material...">
+                        </div>
+                        <button class="btn btn-primary" onclick="openChatModal()">
+                            <i class="fas fa-plus"></i> Nuevo Material
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableChatarra">
+                        <thead><tr>
+                            <th>Nombre</th><th>Unidad</th><th>Stock</th><th>Acciones</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="chatEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-recycle"></i><p>No hay materiales cargados</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CLIENTES / PROVEEDORES ===== -->
+        <div class="section-content" id="section-clientes">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Listado de Clientes y Proveedores</h3>
+                    <div class="card-header-right">
+                        <div class="input-search-wrap">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="input-search" id="searchCli" placeholder="Buscar...">
+                        </div>
+                        <button class="btn btn-primary" onclick="openCliModal()">
+                            <i class="fas fa-plus"></i> Nuevo Contacto
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableClientes">
+                        <thead><tr>
+                            <th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Tipo</th><th>Acciones</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="cliEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-users"></i><p>No hay contactos cargados</p>
+                </div>
+            </div>
+        </div>
+
+    <!-- MODAL CHATARRA -->
+    <div class="modal-overlay" id="modalChat">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalChatTitle">Nuevo Material</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="chatId">
+                <div class="form-group">
+                    <label>Nombre del Material *</label>
+                    <input type="text" id="chatNombre" placeholder="Ej: Cobre, Aluminio, Chatarra...">
+                </div>
+                <div class="form-group">
+                    <label>Unidad de Medida *</label>
+                    <select id="chatUnidad">
+                        <option value="kg">Kilogramo (kg)</option>
+                        <option value="tonelada">Tonelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveChatarra()" id="btnSaveChat">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CLIENTE/PROVEEDOR -->
+    <div class="modal-overlay" id="modalCli">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalCliTitle">Nuevo Contacto</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="cliId">
+                <div class="form-group">
+                    <label>Nombre / Razón Social *</label>
+                    <input type="text" id="cliNombre" placeholder="Nombre completo o razón social">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" id="cliTelefono" placeholder="Sin teléfono">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo *</label>
+                        <select id="cliTipo">
+                            <option value="cliente">Cliente</option>
+                            <option value="proveedor">Proveedor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="cliDireccion" placeholder="Dirección (opcional)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCliente()" id="btnSaveCli">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRM DELETE -->
+    <div class="modal-overlay" id="modalConfirm">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <h3>Confirmar</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text" id="confirmText">¿Desea eliminar este registro?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-danger" id="btnConfirmDelete">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="config.js"></script>
+    <script>
+        createNavbar('maestros');
+
+        let currentDeleteId = null;
+        let currentDeleteType = null; // 'chatarra' o 'cliente'
+
+        // ===== INIT =====
+        (async () => {
+            if (!(await checkAuth(true))) return;
+            await Promise.all([loadChatarra(), loadClientes()]);
+        })();
+
+        // ===== TABS =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + tab.dataset.section).classList.add('active');
+            });
+        });
+
+        // ===== SEARCH FILTERS =====
+        document.getElementById('searchChat').addEventListener('input', filterChat);
+        document.getElementById('searchCli').addEventListener('input', filterCli);
+
+        // ===== LOAD TIPOS DE CHATARRA =====
+        async function loadChatarra() {
+            try {
+                const [chats, stock] = await Promise.all([
+                    apiGet('tipos_chatarra', 'activo=eq.true&order=nombre.asc'),
+                    apiGet('stock', 'select=tipo_chatarra_id,cantidad')
+                ]);
+                const stockMap = {};
+                stock.forEach(s => { stockMap[s.tipo_chatarra_id] = parseFloat(s.cantidad); });
+                renderChatarra(chats, stockMap);
+            } catch (e) { console.error(e); showToast('Error al cargar materiales', 'error'); }
+        }
+
+        function renderChatarra(data, stockMap) {
+            const tbody = document.querySelector('#tableChatarra tbody');
+            const empty = document.getElementById('chatEmpty');
+            if (data.length === 0) {
+                tbody.innerHTML = ''; empty.style.display = 'block'; return;
+            }
+            empty.style.display = 'none';
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td><strong>${escHtml(c.nombre)}</strong></td>
+                    <td>${c.unidad_medida}</td>
+                    <td>${formatNum(stockMap[c.id] || 0, 0)} ${c.unidad_medida}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-outline" onclick="editChatarra(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'chatarra','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterChat() {
+            const q = document.getElementById('searchChat').value.toLowerCase();
+            document.querySelectorAll('#tableChatarra tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        // ===== LOAD CLIENTES/PROVEEDORES =====
+        async function loadClientes() {
+            try {
+                const data = await apiGet('clientes_proveedores', 'activo=eq.true&order=nombre.asc');
+                renderClientes(data);
+            } catch (e) { console.error(e); showToast('Error al cargar contactos', 'error'); }
+        }
+
+        function renderClientes(data) {
+            const tbody = document.querySelector('#tableClientes tbody');
+            const empty = document.getElementById('cliEmpty');
+            if (data.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td><strong>${escHtml(c.nombre)}</strong></td>
+                    <td>${c.telefono || '—'}</td>
+                    <td>${c.direccion || '—'}</td>
+                    <td><span style="text-transform:capitalize;">${c.tipo}</span></td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-outline" onclick="editCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'cliente','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterCli() {
+            const q = document.getElementById('searchCli').value.toLowerCase();
+            document.querySelectorAll('#tableClientes tbody tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        // ===== CHATARRA CRUD =====
+        function openChatModal(id = null) {
+            document.getElementById('modalChat').classList.add('open');
+            document.getElementById('chatId').value = '';
+            document.getElementById('chatNombre').value = '';
+            document.getElementById('chatUnidad').value = 'kg';
+            document.getElementById('modalChatTitle').textContent = 'Nuevo Material';
+            if (id) {
+                loadChatForEdit(id);
+            }
+        }
+
+        async function loadChatForEdit(id) {
+            try {
+                const data = await apiGet('tipos_chatarra', `id=eq.${id}`);
+                if (data.length === 0) return;
+                const c = data[0];
+                document.getElementById('chatId').value = c.id;
+                document.getElementById('chatNombre').value = c.nombre;
+                document.getElementById('chatUnidad').value = c.unidad_medida;
+                document.getElementById('modalChatTitle').textContent = 'Editar Material';
+            } catch (e) { console.error(e); }
+        }
+
+        function editChatarra(id) { openChatModal(id); }
+
+        async function saveChatarra() {
+            const id = document.getElementById('chatId').value;
+            const nombre = document.getElementById('chatNombre').value.trim();
+            const unidad = document.getElementById('chatUnidad').value;
+
+            if (!nombre) { showToast('Ingresá el nombre del material', 'error'); return; }
+
+            const btn = document.getElementById('btnSaveChat');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const payload = { nombre, unidad_medida: unidad };
+                if (id) {
+                    await apiPatch('tipos_chatarra', id, payload);
+                } else {
+                    await apiPost('tipos_chatarra', payload);
+                }
+                closeModals();
+                await loadChatarra();
+                showToast(id ? 'Material actualizado' : 'Material creado', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error');
+            }
+            btn.disabled = false; btn.innerHTML = 'Guardar';
+        }
+
+        // ===== CLIENTE CRUD =====
+        function openCliModal(id = null) {
+            document.getElementById('modalCli').classList.add('open');
+            document.getElementById('cliId').value = '';
+            document.getElementById('cliNombre').value = '';
+            document.getElementById('cliTelefono').value = '';
+            document.getElementById('cliDireccion').value = '';
+            document.getElementById('cliTipo').value = 'cliente';
+            document.getElementById('modalCliTitle').textContent = 'Nuevo Contacto';
+            if (id) {
+                loadCliForEdit(id);
+            }
+        }
+
+        async function loadCliForEdit(id) {
+            try {
+                const data = await apiGet('clientes_proveedores', `id=eq.${id}`);
+                if (data.length === 0) return;
+                const c = data[0];
+                document.getElementById('cliId').value = c.id;
+                document.getElementById('cliNombre').value = c.nombre;
+                document.getElementById('cliTelefono').value = c.telefono || '';
+                document.getElementById('cliDireccion').value = c.direccion || '';
+                document.getElementById('cliTipo').value = c.tipo;
+                document.getElementById('modalCliTitle').textContent = 'Editar Contacto';
+            } catch (e) { console.error(e); }
+        }
+
+        function editCliente(id) { openCliModal(id); }
+
+        async function saveCliente() {
+            const id = document.getElementById('cliId').value;
+            const nombre = document.getElementById('cliNombre').value.trim();
+            const telefono = document.getElementById('cliTelefono').value.trim();
+            const direccion = document.getElementById('cliDireccion').value.trim();
+            const tipo = document.getElementById('cliTipo').value;
+
+            if (!nombre) { showToast('Ingresá el nombre', 'error'); return; }
+
+            const btn = document.getElementById('btnSaveCli');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const payload = { nombre, telefono, direccion, tipo };
+                if (id) {
+                    await apiPatch('clientes_proveedores', id, payload);
+                } else {
+                    await apiPost('clientes_proveedores', payload);
+                }
+                closeModals();
+                await loadClientes();
+                showToast(id ? 'Contacto actualizado' : 'Contacto creado', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error');
+            }
+            btn.disabled = false; btn.innerHTML = 'Guardar';
+        }
+
+        // ===== DELETE (soft delete = set activo=false) =====
+        function confirmDelete(id, type, name) {
+            currentDeleteId = id;
+            currentDeleteType = type;
+            document.getElementById('confirmText').textContent = `¿Desea eliminar "${name}"?`;
+            document.getElementById('modalConfirm').classList.add('open');
+        }
+
+        document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+            if (!currentDeleteId) return;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+            try {
+                const table = currentDeleteType === 'chatarra' ? 'tipos_chatarra' : 'clientes_proveedores';
+                await apiPatch(table, currentDeleteId, { activo: false });
+                closeModals();
+                if (currentDeleteType === 'chatarra') await loadChatarra();
+                else await loadClientes();
+                showToast('Registro eliminado', 'success');
+            } catch (e) {
+                showToast('Error al eliminar: ' + e.message, 'error');
+            }
+            btn.disabled = false; btn.innerHTML = 'Eliminar';
+            currentDeleteId = null; currentDeleteType = null;
+        });
+
+        // ===== MODALS =====
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+        }
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModals(); });
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModals(); });
+
+        // ===== HELPERS =====
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

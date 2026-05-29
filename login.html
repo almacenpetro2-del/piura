@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #ecfdf5;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --danger: #dc2626;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%; max-width: 420px;
+        }
+        .logo {
+            text-align: center; margin-bottom: 20px;
+        }
+        .logo img { width: 72px; height: auto; border-radius: 12px; }
+        .logo h1 { font-size: 1.3rem; color: var(--text); margin-top: 6px; }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px;
+        }
+        .tabs {
+            display: flex; margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+        }
+        .tab {
+            flex: 1; text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            background: none; border-top: none; border-left: none; border-right: none;
+            font-size: 0.9rem;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .form-group { margin-bottom: 16px; display: none; }
+        .form-group.active { display: block; }
+        label {
+            display: block; margin-bottom: 4px;
+            font-weight: 500; font-size: 0.875rem; color: var(--text);
+        }
+        input {
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+        }
+        .input-icon {
+            position: relative;
+        }
+        .input-icon input { padding-right: 40px; }
+        .input-icon .fa-eye, .input-icon .fa-eye-slash {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; color: var(--text-light); font-size: 0.9rem;
+        }
+        .btn {
+            width: 100%; padding: 12px;
+            border: none; border-radius: 8px;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error-msg {
+            color: var(--danger); font-size: 0.8rem;
+            margin-top: 4px; display: none;
+        }
+        .alert {
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 0.85rem; margin-bottom: 16px; display: none;
+        }
+        .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .divider {
+            text-align: center; color: var(--text-light);
+            font-size: 0.8rem; margin: 20px 0;
+            position: relative;
+        }
+        .divider::before, .divider::after {
+            content: ''; position: absolute; top: 50%;
+            width: 40%; height: 1px; background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 14px 20px; border-radius: 10px;
+            color: #fff; font-weight: 500; font-size: 0.9rem;
+            z-index: 9999; animation: slideUp 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .toast-success { background: var(--primary); }
+        .toast-error { background: var(--danger); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <img src="img/logo.jpeg" alt="Khloe Global">
+                <h1>Khloe Global</h1>
+            </div>
+            <div class="alert alert-error" id="alertError"></div>
+            <div class="alert alert-success" id="alertSuccess"></div>
+
+            <div class="tabs" id="tabsContainer">
+                <button class="tab active" data-tab="login">Iniciar Sesión</button>
+                <button class="tab" data-tab="register" id="tabRegister">Registrarse</button>
+            </div>
+
+            <form id="loginForm" class="form-group active" autocomplete="off">
+                <div style="margin-bottom:16px;">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label>Contraseña</label>
+                    <div class="input-icon">
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <i class="far fa-eye" id="toggleLoginPass" style="display:none;"></i>
+                        <i class="far fa-eye-slash" id="toggleLoginPassSlash"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Ingresar
+                </button>
+            </form>
+
+            <form id="registerForm" class="form-group" autocomplete="off">
+                <div style="margin-bottom:16px;">
+                    <label>Nombre</label>
+                    <input type="text" id="regName" placeholder="Tu nombre" required>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label>Contraseña</label>
+                    <div class="input-icon">
+                        <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+                        <i class="far fa-eye" id="toggleRegPass" style="display:none;"></i>
+                        <i class="far fa-eye-slash" id="toggleRegPassSlash"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> Crear Cuenta
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const alertError = document.getElementById('alertError');
+        const alertSuccess = document.getElementById('alertSuccess');
+        const tabs = document.querySelectorAll('.tab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const tabRegister = document.getElementById('tabRegister');
+        const tabsContainer = document.getElementById('tabsContainer');
+
+        function showAlert(msg, type) {
+            const el = type === 'error' ? alertError : alertSuccess;
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function hideAlerts() {
+            alertError.style.display = 'none';
+            alertSuccess.style.display = 'none';
+        }
+
+        // Toggle password visibility
+        function setupPassToggle(inputId, showId, hideId) {
+            const inp = document.getElementById(inputId);
+            const show = document.getElementById(showId);
+            const hide = document.getElementById(hideId);
+            function update() {
+                if (inp.value.length > 0) {
+                    show.style.display = inp.type === 'password' ? 'inline' : 'none';
+                    hide.style.display = inp.type === 'password' ? 'none' : 'inline';
+                } else {
+                    show.style.display = 'none';
+                    hide.style.display = 'inline';
+                }
+            }
+            inp.addEventListener('input', update);
+            show.addEventListener('click', () => { inp.type = 'text'; update(); });
+            hide.addEventListener('click', () => { inp.type = 'password'; update(); });
+        }
+        setupPassToggle('loginPassword', 'toggleLoginPass', 'toggleLoginPassSlash');
+        setupPassToggle('regPassword', 'toggleRegPass', 'toggleRegPassSlash');
+
+        // Switch tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const target = tab.dataset.tab;
+                document.querySelectorAll('.form-group').forEach(f => f.classList.remove('active'));
+                if (target === 'login') {
+                    loginForm.classList.add('active');
+                    registerForm.classList.remove('active');
+                } else {
+                    registerForm.classList.add('active');
+                    loginForm.classList.remove('active');
+                }
+                hideAlerts();
+            });
+        });
+
+        // ===== CHECK IF FIRST USER (determine if registration is needed) =====
+        (async () => {
+            // If already logged in, redirect
+            const token = getAccessToken();
+            if (token) {
+                try {
+                    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) { window.location.replace('app.html'); return; }
+                } catch(e) {}
+                clearSession();
+            }
+
+            // Try to get user count (non-authenticated RPC call)
+            try {
+                const count = await apiRpc('get_user_count');
+                if (count === 0) {
+                    // No users yet — show register tab as default
+                    tabs[0].classList.remove('active');
+                    tabs[1].classList.add('active');
+                    loginForm.classList.remove('active');
+                    registerForm.classList.add('active');
+                    showAlert('No hay usuarios registrados. Creá la cuenta de administrador.', 'success');
+                } else {
+                    // Users exist — show only login, hide register
+                    tabRegister.style.display = 'none';
+                }
+            } catch (e) {
+                // If RPC fails, just show both tabs
+                console.warn('No se pudo verificar usuarios existentes:', e);
+            }
+        })();
+
+        // ===== LOGIN =====
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingresando...';
+            hideAlerts();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error_description || err.msg || 'Credenciales incorrectas');
+                }
+                const session = await res.json();
+                setSession(session);
+                window.location.replace('app.html');
+            } catch (err) {
+                showAlert(err.message, 'error');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar';
+            }
+        });
+
+        // ===== REGISTER (first user — or any if allowed) =====
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+            hideAlerts();
+            const nombre = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (password.length < 6) {
+                showAlert('La contraseña debe tener al menos 6 caracteres.', 'error');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Crear Cuenta';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        data: { nombre }
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.msg || err.error_description || 'Error al registrar');
+                }
+                const data = await res.json();
+
+                // If email confirmation is not required, user is created immediately
+                if (data.session) {
+                    setSession(data.session);
+                    showAlert('Cuenta creada. Redirigiendo...', 'success');
+                    setTimeout(() => window.location.replace('app.html'), 1000);
+                    return;
+                }
+
+                // If user exists but not confirmed
+                if (data.user && !data.session) {
+                    showAlert('Cuenta creada. Verificá tu correo electrónico para activarla, o desactivá la confirmación de email en Supabase.', 'success');
+                    // Switch to login tab
+                    tabs[0].classList.add('active');
+                    tabs[1].classList.remove('active');
+                    loginForm.classList.add('active');
+                    registerForm.classList.remove('active');
+                }
+            } catch (err) {
+                showAlert(err.message, 'error');
+            }
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Crear Cuenta';
+        });
+
+        // ===== TOAST =====
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

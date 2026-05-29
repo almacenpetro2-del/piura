@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compras — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --warning: #d97706;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* NAVBAR */
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-brand svg { width: 30px; height: 30px; color: var(--primary); }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        /* MAIN */
+        .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+
+        /* TABS */
+        .tabs { display: flex; gap: 0; margin-bottom: 24px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .tab { flex: 1; padding: 14px 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-light); background: var(--card); border: none; transition: all 0.2s; }
+        .tab.active { color: #fff; background: var(--primary); }
+        .tab:hover:not(.active) { background: #f8fafc; }
+
+        /* CARD */
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1.05rem; font-weight: 600; }
+
+        /* FORM */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: var(--text); }
+        .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; transition: all 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
+        .form-group input[readonly] { background: #f8fafc; color: var(--text-light); }
+
+        /* BUTTONS */
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        /* DETALLE TABLE */
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 16px; }
+        .detail-table th { background: #f8fafc; padding: 8px 10px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); }
+        .detail-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+        .detail-table input, .detail-table select {
+            width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 0.82rem; font-family: inherit;
+        }
+        .detail-table input:focus, .detail-table select:focus { outline: none; border-color: var(--primary); }
+
+        /* TOTALS */
+        .totals { display: flex; justify-content: flex-end; gap: 40px; margin-bottom: 20px; font-size: 0.9rem; flex-wrap: wrap; }
+        .total-item { text-align: right; }
+        .total-item .total-label { color: var(--text-light); font-size: 0.8rem; }
+        .total-item .total-value { font-weight: 700; font-size: 1.1rem; }
+        .total-highlight { color: var(--primary); font-size: 1.4rem !important; }
+
+        /* ACTIONS BAR */
+        .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+
+        /* LIST TABLE */
+        .table-wrap { overflow-x: auto; margin-top: 8px; }
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #f8fafc; }
+
+        /* FILTERS */
+        .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 0.78rem; font-weight: 500; color: var(--text-light); }
+        .filter-group input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: all 0.2s; }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal { background: var(--card); border-radius: var(--radius); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .totals { flex-direction: column; gap: 8px; }
+            .actions-bar { flex-direction: column; gap: 12px; align-items: stretch; }
+        }
+        @media (max-width: 600px) {
+            .main { padding: 16px; }
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Compras</h1>
+
+        <div class="tabs">
+            <button class="tab active" data-section="nueva">Nueva Compra</button>
+            <button class="tab" data-section="listado">Listado de Compras</button>
+        </div>
+
+        <!-- ===== NUEVA COMPRA ===== -->
+        <div class="section-content active" id="section-nueva">
+            <div class="card">
+                <div class="card-header"><h3>Registrar Compra</h3></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Proveedor *</label>
+                        <select id="compProveedor"><option value="">Seleccionar...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="compFecha">
+                    </div>
+                    <div class="form-group">
+                        <label>IVA (%)</label>
+                        <input type="number" id="compIvaPorc" value="21" step="1" min="0" max="100">
+                    </div>
+                </div>
+
+                <!-- detalle rows -->
+                <h4 style="font-size:0.95rem; margin: 16px 0 8px; display: flex; align-items: center; justify-content: space-between;">
+                    Detalle de la compra
+                    <button class="btn btn-sm btn-primary" onclick="addRow()"><i class="fas fa-plus"></i> Agregar ítem</button>
+                </h4>
+                <div style="overflow-x: auto;">
+                    <table class="detail-table" id="detailTable">
+                        <thead><tr>
+                            <th>Material</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th><th></th>
+                        </tr></thead>
+                        <tbody id="detailRows"></tbody>
+                    </table>
+                </div>
+
+                <!-- TOTALS -->
+                <div class="totals">
+                    <div class="total-item">
+                        <div class="total-label">Subtotal</div>
+                        <div class="total-value" id="txtSubtotal">$ 0,00</div>
+                    </div>
+                    <div class="total-item">
+                        <div class="total-label">IVA</div>
+                        <div class="total-value" id="txtIva">$ 0,00</div>
+                    </div>
+                    <div class="total-item">
+                        <div class="total-label">TOTAL</div>
+                        <div class="total-value total-highlight" id="txtTotal">$ 0,00</div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button class="btn btn-secondary" onclick="resetForm()"><i class="fas fa-undo"></i> Limpiar</button>
+                    <button class="btn btn-primary" id="btnSaveCompra" onclick="saveCompra()">
+                        <i class="fas fa-save"></i> Guardar Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== LISTADO COMPRAS ===== -->
+        <div class="section-content" id="section-listado">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Historial de Compras</h3>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
+                        <button class="btn btn-sm btn-outline" onclick="loadCompras()" style="margin-left:4px;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="date" id="filtFechaDesde">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="date" id="filtFechaHasta">
+                    </div>
+                    <div class="filter-group">
+                        <label>Proveedor</label>
+                        <select id="filtProveedor" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Producto</label>
+                        <select id="filtProductoCompra" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <input type="text" id="filtBuscarCompra" placeholder="ID, proveedor..." style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="loadCompras()"><i class="fas fa-filter"></i> Filtrar</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="tableCompras">
+                        <thead><tr>
+                            <th>ID</th><th>Fecha</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th><th>Total</th><th></th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="comprasEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-shopping-cart"></i><p>No hay compras registradas</p>
+                </div>
+            </div>
+        </div>
+
+    <!-- MODAL VER DETALLE -->
+    <div class="modal-overlay" id="modalDetalle">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Detalle de Compra #<span id="detalleCompraId"></span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="detail-table">
+                    <thead><tr><th>Material</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
+                    <tbody id="detalleCompraBody"></tbody>
+                    <tfoot id="detalleCompraFoot" style="font-weight:700;border-top:2px solid var(--border);"></tfoot>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="config.js"></script>
+    <script>
+        createNavbar('compras');
+
+        let proveedores = [];
+        let materiales = [];
+        let rowCounter = 0;
+        let comprasData = [];
+
+        // ===== INIT =====
+        (async () => {
+            if (!(await checkAuth(true))) return;
+            await loadSelects();
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('compFecha').value = hoy;
+            document.getElementById('filtFechaDesde').value = hoy.substring(0,7) + '-01';
+            document.getElementById('filtFechaHasta').value = hoy;
+            addRow();
+        })();
+
+        // ===== TABS =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + tab.dataset.section).classList.add('active');
+                if (tab.dataset.section === 'listado') loadCompras();
+            });
+        });
+
+        // ===== LOAD SELECTS =====
+        async function loadSelects() {
+            try {
+                proveedores = await apiGet('clientes_proveedores', 'tipo=eq.proveedor&activo=eq.true&order=nombre.asc');
+                materiales = await apiGet('tipos_chatarra', 'activo=eq.true&order=nombre.asc');
+
+                // Compra form
+                const selProv = document.getElementById('compProveedor');
+                selProv.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+                proveedores.forEach(p => { selProv.innerHTML += `<option value="${p.id}">${escHtml(p.nombre)}</option>`; });
+
+                // Filtro proveedor
+                const filtProv = document.getElementById('filtProveedor');
+                filtProv.innerHTML = '<option value="">Todos</option>';
+                proveedores.forEach(p => { filtProv.innerHTML += `<option value="${p.id}">${escHtml(p.nombre)}</option>`; });
+
+                // Filtro producto
+                const filtProd = document.getElementById('filtProductoCompra');
+                filtProd.innerHTML = '<option value="">Todos</option>';
+                materiales.forEach(m => { filtProd.innerHTML += `<option value="${m.id}">${escHtml(m.nombre)}</option>`; });
+
+                // Update all existing rows' material selects
+                updateRowMaterialSelects();
+            } catch (e) { console.error(e); showToast('Error al cargar datos', 'error'); }
+        }
+
+        function updateRowMaterialSelects() {
+            document.querySelectorAll('.sel-material').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">Seleccionar...</option>';
+                materiales.forEach(m => {
+                    sel.innerHTML += `<option value="${m.id}" data-unidad="${m.unidad_medida}">${escHtml(m.nombre)}</option>`;
+                });
+                if (currentVal) sel.value = currentVal;
+            });
+        }
+
+        // ===== DYNAMIC ROWS =====
+        function addRow() {
+            const idx = ++rowCounter;
+            const options = materiales.map(m =>
+                `<option value="${m.id}" data-unidad="${m.unidad_medida}">${escHtml(m.nombre)}</option>`
+            ).join('');
+
+            const row = document.createElement('tr');
+            row.id = `row-${idx}`;
+            row.innerHTML = `
+                <td>
+                    <select class="sel-material" onchange="onMaterialChange(this)" style="width:100%;">
+                        <option value="">Seleccionar...</option>
+                        ${options}
+                    </select>
+                </td>
+                <td><input type="number" class="inp-cantidad" value="" step="0.01" min="0.01" placeholder="0" oninput="recalcAll()"></td>
+                <td><input type="number" class="inp-precio" value="" step="0.01" min="0" placeholder="0.00" oninput="recalcAll()"></td>
+                <td class="td-subtotal" style="text-align:right;font-weight:600;">$ 0,00</td>
+                <td><button class="btn btn-sm btn-danger" onclick="removeRow(${idx})"><i class="fas fa-trash"></i></button></td>
+            `;
+            document.getElementById('detailRows').appendChild(row);
+        }
+
+        function removeRow(idx) {
+            const row = document.getElementById(`row-${idx}`);
+            if (row) row.remove();
+            recalcAll();
+        }
+
+        function onMaterialChange(sel) {
+            recalcAll();
+        }
+
+        // ===== RECALC =====
+        function recalcAll() {
+            let subtotal = 0;
+            document.querySelectorAll('#detailRows tr').forEach(row => {
+                const cant = parseFloat(row.querySelector('.inp-cantidad')?.value) || 0;
+                const precio = parseFloat(row.querySelector('.inp-precio')?.value) || 0;
+                const sub = cant * precio;
+                row.querySelector('.td-subtotal').textContent = formatMoney(sub);
+                if (cant > 0 && precio > 0) subtotal += sub;
+            });
+            const ivaPct = parseFloat(document.getElementById('compIvaPorc').value) || 0;
+            const iva = subtotal * (ivaPct / 100);
+            const total = subtotal + iva;
+
+            document.getElementById('txtSubtotal').textContent = formatMoney(subtotal);
+            document.getElementById('txtIva').textContent = formatMoney(iva);
+            document.getElementById('txtTotal').textContent = formatMoney(total);
+        }
+        document.getElementById('compIvaPorc').addEventListener('input', recalcAll);
+
+        // ===== SAVE COMPRA =====
+        async function saveCompra() {
+            const proveedorId = document.getElementById('compProveedor').value;
+            const fecha = document.getElementById('compFecha').value;
+
+            if (!proveedorId) { showToast('Seleccioná un proveedor', 'error'); return; }
+            if (!fecha) { showToast('Ingresá la fecha', 'error'); return; }
+
+            // Collect rows with data
+            const rows = [];
+            document.querySelectorAll('#detailRows tr').forEach(row => {
+                const matId = row.querySelector('.sel-material')?.value;
+                const cant = parseFloat(row.querySelector('.inp-cantidad')?.value) || 0;
+                const precio = parseFloat(row.querySelector('.inp-precio')?.value) || 0;
+                if (matId && cant > 0 && precio > 0) {
+                    rows.push({ material_id: parseInt(matId), cantidad: cant, precio_unitario: precio, subtotal: cant * precio });
+                }
+            });
+            if (rows.length === 0) { showToast('Agregá al menos un ítem con cantidad y precio', 'error'); return; }
+
+            const ivaPct = parseFloat(document.getElementById('compIvaPorc').value) || 0;
+            const subtotal = rows.reduce((s, r) => s + r.subtotal, 0);
+            const iva = subtotal * ivaPct / 100;
+            const total = subtotal + iva;
+
+            const btn = document.getElementById('btnSaveCompra');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                // 1. Create compra
+                const compraData = await apiPost('compras', {
+                    proveedor_id: parseInt(proveedorId),
+                    fecha: fecha + 'T12:00:00',
+                    subtotal, iva, total
+                });
+                const compraId = compraData[0].id;
+
+                // 2. Create detalle and update stock
+                for (const row of rows) {
+                    await apiPost('detalle_compras', {
+                        compra_id: compraId,
+                        tipo_chatarra_id: row.material_id,
+                        cantidad: row.cantidad,
+                        precio_unitario: row.precio_unitario,
+                        subtotal: row.subtotal
+                    });
+                    // Incrementar stock
+                    await updateStock(row.material_id, row.cantidad);
+                    // Registrar precio en histórico
+                    apiPost('historico_precios', {
+                        tipo_chatarra_id: row.material_id,
+                        precio_compra: row.precio_unitario
+                    }).catch(() => {});
+                }
+
+                resetForm();
+                showToast('Compra registrada exitosamente', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error');
+            }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar Compra';
+        }
+
+        function resetForm() {
+            document.getElementById('compProveedor').value = '';
+            document.getElementById('compFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('compIvaPorc').value = '21';
+            document.getElementById('detailRows').innerHTML = '';
+            addRow();
+            recalcAll();
+        }
+
+        // ===== LIST COMPRAS =====
+        async function loadCompras() {
+            const tbody = document.querySelector('#tableCompras tbody');
+            const empty = document.getElementById('comprasEmpty');
+            try {
+                let query = 'select=*,clientes_proveedores(nombre)&order=fecha.desc&limit=200';
+                const desde = document.getElementById('filtFechaDesde').value;
+                const hasta = document.getElementById('filtFechaHasta').value;
+                const filtroProv = document.getElementById('filtProveedor').value;
+                const filtroProd = document.getElementById('filtProductoCompra').value;
+                const buscar = document.getElementById('filtBuscarCompra').value.trim().toLowerCase();
+
+                if (desde) query += `&fecha=gte.${desde}T00:00:00`;
+                if (hasta) query += `&fecha=lt.${hasta}T23:59:59`;
+                if (filtroProv) query += `&proveedor_id=eq.${filtroProv}`;
+
+                let data = await apiGet('compras', query);
+
+                // Product filter: filter by material in line items
+                if (filtroProd && data.length > 0) {
+                    const allIds = data.map(c => c.id);
+                    const detalles = await apiGet('detalle_compras',
+                        `compra_id=in.(${allIds.join(',')})&tipo_chatarra_id=eq.${filtroProd}&select=compra_id`);
+                    const matchingIds = new Set(detalles.map(d => d.compra_id));
+                    data = data.filter(c => matchingIds.has(c.id));
+                }
+
+                // Text search (ID, provider name)
+                if (buscar) {
+                    data = data.filter(c => {
+                        return c.id.toString().includes(buscar) ||
+                            (c.clientes_proveedores?.nombre || '').toLowerCase().includes(buscar);
+                    });
+                }
+
+                if (data.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+                comprasData = data;
+                empty.style.display = 'none';
+                tbody.innerHTML = data.map(c => `
+                    <tr>
+                        <td>#${c.id}</td>
+                        <td>${formatDateTime(c.fecha)}</td>
+                        <td>${escHtml(c.clientes_proveedores?.nombre || '—')}</td>
+                        <td>${formatMoney(c.subtotal)}</td>
+                        <td>${formatMoney(c.iva)}</td>
+                        <td><strong>${formatMoney(c.total)}</strong></td>
+                        <td><button class="btn btn-sm btn-outline" onclick="verDetalle(${c.id})"><i class="fas fa-eye"></i></button></td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); showToast('Error al cargar compras', 'error'); }
+        }
+
+        // ===== VER DETALLE =====
+        async function verDetalle(compraId) {
+            document.getElementById('detalleCompraId').textContent = compraId;
+            try {
+                const detalle = await apiGet('detalle_compras', `compra_id=eq.${compraId}&select=*,tipos_chatarra(nombre,unidad_medida)`);
+                document.getElementById('detalleCompraBody').innerHTML = detalle.map(d => `
+                    <tr>
+                        <td>${escHtml(d.tipos_chatarra?.nombre || '—')}</td>
+                        <td>${formatNum(d.cantidad, 2)} ${d.tipos_chatarra?.unidad_medida || ''}</td>
+                        <td>${formatMoney(d.precio_unitario)}</td>
+                        <td>${formatMoney(d.subtotal)}</td>
+                    </tr>
+                `).join('');
+                const total = detalle.reduce((sum, d) => sum + parseFloat(d.subtotal || 0), 0);
+                document.getElementById('detalleCompraFoot').innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:right;padding:10px 14px;">Total de ítems:</td>
+                        <td style="padding:10px 14px;font-weight:700;font-size:1rem;">${formatMoney(total)}</td>
+                    </tr>
+                `;
+                document.getElementById('modalDetalle').classList.add('open');
+            } catch (e) { showToast('Error al cargar detalle', 'error'); }
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+        }
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+        function exportarCSV() {
+            if (comprasData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+            let csv = 'ID,Fecha,Proveedor,Subtotal,IVA,Total\n';
+            comprasData.forEach(c => {
+                csv += `#${c.id},"${formatDateTime(c.fecha)}","${c.clientes_proveedores?.nombre || '—'}",${formatNum(c.subtotal,2)},${formatNum(c.iva,2)},${formatNum(c.total,2)}\n`;
+            });
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'compras.csv'; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado como CSV', 'success');
+        }
+
+        function imprimirPDF() {
+            if (comprasData.length === 0) { showToast('No hay datos para imprimir', 'error'); return; }
+            const desde = document.getElementById('filtFechaDesde').value || '—';
+            const hasta = document.getElementById('filtFechaHasta').value || '—';
+            let rows = '';
+            let grandTotal = 0;
+            comprasData.forEach(c => {
+                grandTotal += parseFloat(c.total);
+                rows += `<tr>
+                    <td>#${c.id}</td>
+                    <td>${formatDateTime(c.fecha)}</td>
+                    <td>${escHtml(c.clientes_proveedores?.nombre || '—')}</td>
+                    <td style="text-align:right;">${formatMoney(c.subtotal)}</td>
+                    <td style="text-align:right;">${formatMoney(c.iva)}</td>
+                    <td style="text-align:right;font-weight:600;">${formatMoney(c.total)}</td>
+                </tr>`;
+            });
+            const printDiv = document.createElement('div');
+            printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
+            printDiv.innerHTML = `
+                <h1 style="margin-bottom:4px;">Compras</h1>
+                <p style="margin-bottom:16px;color:#64748b;">Período: ${desde} al ${hasta}</p>
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead><tr style="background:#f8fafc;">
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">ID</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Fecha</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Proveedor</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Subtotal</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">IVA</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Total</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr style="border-top:2px solid #e2e8f0;font-weight:700;">
+                        <td colspan="5" style="padding:10px;text-align:right;">TOTAL GENERAL</td>
+                        <td style="padding:10px;text-align:right;font-size:1.1rem;color:#059669;">${formatMoney(grandTotal)}</td>
+                    </tr></tfoot>
+                </table>
+            `;
+            document.body.appendChild(printDiv);
+            window.print();
+            document.body.removeChild(printDiv);
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.className = `toast toast-${type}`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

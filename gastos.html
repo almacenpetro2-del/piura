@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastos — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --warning: #d97706;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+
+        .tabs { display: flex; margin-bottom: 24px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .tab { flex: 1; padding: 14px 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-light); background: var(--card); border: none; transition: all 0.2s; }
+        .tab.active { color: #fff; background: var(--primary); }
+        .tab:hover:not(.active) { background: #f8fafc; }
+
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1.05rem; font-weight: 600; }
+
+        .form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; transition: all 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
+
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+
+        .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 0.78rem; font-weight: 500; color: var(--text-light); }
+        .filter-group input, .filter-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; }
+
+        .totals-bar { display: flex; flex-wrap: wrap; gap: 12px; padding: 16px; background: var(--primary-light); border-radius: 8px; margin-top: 16px; }
+        .total-chip { flex: 1; min-width: 100px; text-align: center; }
+        .total-chip .chip-label { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .total-chip .chip-value { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+        .total-chip .chip-value.total-general { color: var(--danger); font-size: 1.2rem; }
+
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+        .actions { display: flex; gap: 4px; }
+        .text-right { text-align: right; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; background: #e2e8f0; color: #475569; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 900px) {
+            .form-grid { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .main { padding: 16px; }
+            .tabs { flex-direction: column; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .totals-bar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Gastos Adicionales</h1>
+
+        <div class="tabs">
+            <button class="tab active" data-section="nuevo">Nuevo Gasto</button>
+            <button class="tab" data-section="listado">Listado de Gastos</button>
+        </div>
+
+        <!-- ===== NUEVO GASTO ===== -->
+        <div class="section-content active" id="section-nuevo">
+            <div class="card">
+                <div class="card-header"><h3>Registrar Gasto</h3></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Descripción *</label>
+                        <input type="text" id="gasDescripcion" placeholder="Ej: Almuerzo personal, Pasaje...">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <input type="text" id="gasCategoria" list="cat-suggestions" placeholder="Ej: Personal, Flete..." autocomplete="off">
+                        <datalist id="cat-suggestions">
+                            <option value="Personal">
+                            <option value="Almuerzo">
+                            <option value="Pasaje">
+                            <option value="Flete">
+                            <option value="Servicios">
+                            <option value="Mantenimiento">
+                            <option value="Impuestos">
+                            <option value="Varios">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad</label>
+                        <input type="number" id="gasCantidad" value="1" step="0.01" min="0.01" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Monto Unit. ($) *</label>
+                        <input type="number" id="gasMonto" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="gasFecha">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                    <button class="btn btn-secondary" onclick="resetForm()"><i class="fas fa-undo"></i> Limpiar</button>
+                    <button class="btn btn-primary" id="btnSaveGasto" onclick="saveGasto()">
+                        <i class="fas fa-save"></i> Guardar Gasto
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== LISTADO DE GASTOS ===== -->
+        <div class="section-content" id="section-listado">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Historial de Gastos</h3>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
+                        <button class="btn btn-sm btn-outline" onclick="loadGastos()" style="margin-left:4px;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="date" id="filtDesde">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="date" id="filtHasta">
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <input type="text" id="filtBuscar" placeholder="Descripción..." style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="loadGastos()"><i class="fas fa-filter"></i> Filtrar</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableGastos">
+                        <thead><tr>
+                            <th>Fecha</th><th>Descripción</th><th>Categoría</th><th class="text-right">Cant.</th><th class="text-right">P. Unit.</th><th class="text-right">Total</th><th></th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="gastosEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-receipt"></i><p>No hay gastos registrados</p>
+                </div>
+                <div class="totals-bar" id="totalsBar" style="display:none;">
+                    <div id="totalsContainer" style="display:flex;flex-wrap:wrap;gap:12px;width:100%;"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        createNavbar('gastos');
+
+        let gastosData = [];
+
+        (async () => {
+            if (!(await checkAuth(true))) return;
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('gasFecha').value = hoy;
+            document.getElementById('filtDesde').value = hoy.substring(0,7) + '-01';
+            document.getElementById('filtHasta').value = hoy;
+        })();
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + tab.dataset.section).classList.add('active');
+                if (tab.dataset.section === 'listado') loadGastos();
+            });
+        });
+
+        async function saveGasto() {
+            const descripcion = document.getElementById('gasDescripcion').value.trim();
+            const categoria = document.getElementById('gasCategoria').value.trim() || 'Varios';
+            const cantidad = parseFloat(document.getElementById('gasCantidad').value) || 1;
+            const monto = parseFloat(document.getElementById('gasMonto').value) || 0;
+            const fecha = document.getElementById('gasFecha').value;
+
+            if (!descripcion) { showToast('Ingresá la descripción', 'error'); return; }
+            if (monto <= 0) { showToast('El monto debe ser mayor a 0', 'error'); return; }
+            if (cantidad <= 0) { showToast('La cantidad debe ser mayor a 0', 'error'); return; }
+            if (!fecha) { showToast('Ingresá la fecha', 'error'); return; }
+
+            const btn = document.getElementById('btnSaveGasto');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                await apiPost('gastos_adicionales', {
+                    descripcion,
+                    categoria,
+                    cantidad,
+                    monto,
+                    fecha: fecha + 'T12:00:00'
+                });
+                resetForm();
+                showToast('Gasto registrado', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error');
+            }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar Gasto';
+        }
+
+        function resetForm() {
+            document.getElementById('gasDescripcion').value = '';
+            document.getElementById('gasCategoria').value = '';
+            document.getElementById('gasCantidad').value = '1';
+            document.getElementById('gasMonto').value = '';
+            document.getElementById('gasFecha').value = new Date().toISOString().split('T')[0];
+        }
+
+        async function loadGastos() {
+            const tbody = document.querySelector('#tableGastos tbody');
+            const empty = document.getElementById('gastosEmpty');
+            const totalsBar = document.getElementById('totalsBar');
+            const totalsContainer = document.getElementById('totalsContainer');
+
+            try {
+                let query = 'order=fecha.desc&limit=200';
+                const desde = document.getElementById('filtDesde').value;
+                const hasta = document.getElementById('filtHasta').value;
+                const buscar = document.getElementById('filtBuscar').value.trim().toLowerCase();
+
+                if (desde) query += `&fecha=gte.${desde}`;
+                if (hasta) query += `&fecha=lt.${hasta}T23:59:59`;
+
+                const data = await apiGet('gastos_adicionales', query);
+
+                // Filtrar por texto de búsqueda en JS (descripción o categoría)
+                const filtered = buscar
+                    ? data.filter(g => g.descripcion.toLowerCase().includes(buscar) || g.categoria.toLowerCase().includes(buscar))
+                    : data;
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = ''; empty.style.display = 'block'; totalsBar.style.display = 'none';
+                    return;
+                }
+                empty.style.display = 'none'; totalsBar.style.display = 'flex';
+
+                // Totales dinámicos por categoría
+                const catTotals = {};
+                let grandTotal = 0;
+                filtered.forEach(g => {
+                    const cat = g.categoria || 'Varios';
+                    const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
+                    catTotals[cat] = (catTotals[cat] || 0) + total;
+                    grandTotal += total;
+                });
+
+                // Render totals chips
+                gastosData = filtered;
+                const catNames = Object.keys(catTotals).sort();
+                let chipsHTML = '';
+                catNames.forEach(cat => {
+                    chipsHTML += `<div class="total-chip"><div class="chip-label">${escHtml(cat)}</div><div class="chip-value">${formatMoney(catTotals[cat])}</div></div>`;
+                });
+                chipsHTML += `<div class="total-chip"><div class="chip-label">TOTAL</div><div class="chip-value total-general">${formatMoney(grandTotal)}</div></div>`;
+                totalsContainer.innerHTML = chipsHTML;
+
+                tbody.innerHTML = filtered.map(g => {
+                    const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
+                    return `
+                    <tr>
+                        <td>${formatDateTime(g.fecha)}</td>
+                        <td>${escHtml(g.descripcion)}</td>
+                        <td><span class="badge">${escHtml(g.categoria || 'Varios')}</span></td>
+                        <td class="text-right">${formatNum(g.cantidad, 2)}</td>
+                        <td class="text-right">${formatMoney(g.monto)}</td>
+                        <td class="text-right"><strong>${formatMoney(total)}</strong></td>
+                        <td class="actions">
+                            <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteGasto(${g.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `}).join('');
+            } catch (e) { console.error(e); showToast('Error al cargar gastos', 'error'); }
+        }
+
+        async function deleteGasto(id) {
+            if (!confirm('¿Eliminar este gasto?')) return;
+            try {
+                await apiDelete('gastos_adicionales', id);
+                await loadGastos();
+                showToast('Gasto eliminado', 'success');
+            } catch (e) { showToast('Error al eliminar: ' + e.message, 'error'); }
+        }
+
+        function exportarCSV() {
+            if (gastosData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+            let csv = 'Fecha,Descripción,Categoría,Cantidad,P. Unit.,Total\n';
+            gastosData.forEach(g => {
+                const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
+                csv += `"${formatDateTime(g.fecha)}","${g.descripcion}","${g.categoria || 'Varios'}",${formatNum(g.cantidad,2)},${formatNum(g.monto,2)},${formatNum(total,2)}\n`;
+            });
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'gastos.csv'; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado como CSV', 'success');
+        }
+
+        function imprimirPDF() {
+            if (gastosData.length === 0) { showToast('No hay datos para imprimir', 'error'); return; }
+            const desde = document.getElementById('filtDesde').value || '—';
+            const hasta = document.getElementById('filtHasta').value || '—';
+            let rows = '';
+            let grandTotal = 0;
+            gastosData.forEach(g => {
+                const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
+                grandTotal += total;
+                rows += `<tr>
+                    <td>${formatDateTime(g.fecha)}</td>
+                    <td>${escHtml(g.descripcion)}</td>
+                    <td>${escHtml(g.categoria || 'Varios')}</td>
+                    <td style="text-align:right;">${formatNum(g.cantidad, 2)}</td>
+                    <td style="text-align:right;">${formatMoney(g.monto)}</td>
+                    <td style="text-align:right;font-weight:600;">${formatMoney(total)}</td>
+                </tr>`;
+            });
+            const printDiv = document.createElement('div');
+            printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
+            printDiv.innerHTML = `
+                <h1 style="margin-bottom:4px;">Gastos</h1>
+                <p style="margin-bottom:16px;color:#64748b;">Período: ${desde} al ${hasta}</p>
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead><tr style="background:#f8fafc;">
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Fecha</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Descripción</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Categoría</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Cant.</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">P. Unit.</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Total</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr style="border-top:2px solid #e2e8f0;font-weight:700;">
+                        <td colspan="5" style="padding:10px;text-align:right;">TOTAL GENERAL</td>
+                        <td style="padding:10px;text-align:right;font-size:1.1rem;color:#dc2626;">${formatMoney(grandTotal)}</td>
+                    </tr></tfoot>
+                </table>
+            `;
+            document.body.appendChild(printDiv);
+            window.print();
+            document.body.removeChild(printDiv);
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast'); if (existing) existing.remove();
+            const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+            document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

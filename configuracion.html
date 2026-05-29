@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --danger-light: #fef2f2;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        .main { max-width: 900px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .card-header h3 { font-size: 1.05rem; font-weight: 600; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.85rem; color: var(--text); }
+        .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; transition: all 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+        .badge { padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-admin { background: #fef3c7; color: #92400e; }
+        .badge-user { background: #e0e7ff; color: #3730a3; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: all 0.2s; }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal { background: var(--card); border-radius: var(--radius); width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); padding: 4px; }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+        .empty-state { text-align: center; padding: 32px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2rem; margin-bottom: 8px; display: block; }
+
+        .user-info { font-size: 0.85rem; background: #f1f5f9; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+        .user-info strong { color: var(--primary); }
+
+        .respaldo-row { display: flex; gap: 24px; flex-wrap: wrap; }
+        .respaldo-box { flex: 1; min-width: 250px; padding: 24px; border-radius: 8px; text-align: center; }
+        .respaldo-box.download { background: var(--primary-light); border: 1px solid rgba(5,150,105,0.2); }
+        .respaldo-box.restore { background: #fef2f2; border: 1px solid rgba(220,38,38,0.2); }
+        .respaldo-box p { font-size: 0.8rem; color: var(--text-light); margin: 4px 0 12px; }
+        .respaldo-box .big-icon { font-size: 2rem; margin-bottom: 8px; }
+        .restore-summary { font-size: 0.82rem; text-align: left; line-height: 1.6; background: #fff; padding: 12px; border-radius: 6px; margin-top: 12px; border: 1px solid var(--border); }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .main { padding: 16px; }
+            .form-row { flex-direction: column; }
+            .respaldo-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Configuración</h1>
+
+        <div class="user-info">
+            <strong id="loggedUserEmail">Cargando...</strong>
+            <span style="margin-left:8px;color:var(--text-light);" id="loggedUserRole"></span>
+        </div>
+
+        <!-- DATOS DE LA EMPRESA -->
+        <div class="card">
+            <div class="card-header"><h3>Datos de la Empresa</h3></div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre de la Empresa</label>
+                    <input type="text" id="cfgNombre" placeholder="Khloe Global">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="cfgTelefono" placeholder="+54 9 261 123 4567">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Dirección</label>
+                <input type="text" id="cfgDireccion" placeholder="Av. Ejemplo 123, Mendoza">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>IVA por defecto (%)</label>
+                    <input type="number" id="cfgIva" value="21" step="0.5" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label>URL del Logo</label>
+                    <input type="text" id="cfgLogo" placeholder="https://...">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnSaveEmpresa" onclick="saveEmpresa()">
+                <i class="fas fa-save"></i> Guardar Configuración
+            </button>
+        </div>
+
+        <!-- CAMBIAR CONTRASEÑA -->
+        <div class="card">
+            <div class="card-header"><h3>Cambiar Contraseña</h3></div>
+            <div class="form-group">
+                <label>Contraseña Actual</label>
+                <input type="password" id="passActual" placeholder="••••••••">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="passNueva" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Nueva Contraseña</label>
+                    <input type="password" id="passNueva2" placeholder="Repetir contraseña">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnChangePass" onclick="changePassword()">
+                <i class="fas fa-key"></i> Cambiar Contraseña
+            </button>
+        </div>
+
+        <!-- GESTIÓN DE USUARIOS -->
+        <div class="card" id="cardUsuarios">
+            <div class="card-header">
+                <h3>Gestión de Usuarios</h3>
+                <button class="btn btn-sm btn-primary" onclick="openUserModal()"><i class="fas fa-plus"></i> Nuevo Usuario</button>
+            </div>
+            <div class="table-wrap">
+                <table id="tableUsers">
+                    <thead><tr>
+                        <th>Email</th><th>Nombre</th><th>Rol</th><th>Acciones</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="usersEmpty" class="empty-state" style="display:none;">
+                <i class="fas fa-users"></i><p>No hay usuarios registrados</p>
+            </div>
+        </div>
+
+        <!-- RESPALDO Y RESTAURACIÓN -->
+        <div class="card" id="cardRespaldo" style="display:none;">
+            <div class="card-header"><h3>Respaldo y Restauración</h3></div>
+            <div class="respaldo-row">
+                <div class="respaldo-box download">
+                    <i class="fas fa-download big-icon" style="color:var(--primary);"></i>
+                    <p style="font-weight:600;">Descargar Respaldo</p>
+                    <p>Descarga todos los datos en un archivo .json para guardar de forma segura.</p>
+                    <button class="btn btn-primary" onclick="descargarRespaldo()" id="btnDescargar">
+                        <i class="fas fa-download"></i> Descargar Todo
+                    </button>
+                </div>
+                <div class="respaldo-box restore">
+                    <i class="fas fa-upload big-icon" style="color:var(--danger);"></i>
+                    <p style="font-weight:600;">Restaurar Respaldo</p>
+                    <p>Carga un archivo .json de respaldo previamente descargado.</p>
+                    <input type="file" id="fileRespaldo" accept=".json" style="display:none;" onchange="onFileSelected(event)">
+                    <button class="btn btn-danger" onclick="document.getElementById('fileRespaldo').click()">
+                        <i class="fas fa-upload"></i> Seleccionar Archivo
+                    </button>
+                    <div id="restoreInfo" style="display:none;margin-top:12px;"></div>
+                    <button class="btn btn-danger" id="btnRestaurar" style="display:none;margin-top:8px;" onclick="restaurarRespaldo()">
+                        <i class="fas fa-sync-alt"></i> Restaurar Datos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    <!-- MODAL CREAR USUARIO -->
+    <div class="modal-overlay" id="modalUser">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Crear Usuario</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="newUserEmail" placeholder="correo@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="newUserName" placeholder="Nombre del usuario">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña *</label>
+                    <input type="password" id="newUserPass" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select id="newUserRole">
+                        <option value="usuario">Usuario</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" id="btnCreateUser" onclick="createUser()">
+                    <i class="fas fa-user-plus"></i> Crear
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+    createNavbar('configuracion');
+
+    let currentUser = null;
+    let isAdmin = false;
+    let backupFileData = null;
+
+    (async () => {
+        if (!(await checkAuth(true))) return;
+        await loadUserInfo();
+        await loadConfig();
+        if (isAdmin) {
+            document.getElementById('cardRespaldo').style.display = 'block';
+            loadUsers().catch(() => {});
+        } else {
+            document.getElementById('cardUsuarios').style.display = 'none';
+        }
+    })();
+
+    async function loadUserInfo() {
+        try {
+            const token = getAccessToken();
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+            });
+            currentUser = await res.json();
+            document.getElementById('loggedUserEmail').textContent = currentUser.email;
+            const perfil = await apiGet('perfiles', `id=eq.${currentUser.id}&limit=1`);
+            if (perfil.length > 0) {
+                isAdmin = perfil[0].rol === 'admin';
+                document.getElementById('loggedUserRole').textContent = isAdmin ? '(Administrador)' : '(Usuario)';
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadConfig() {
+        try {
+            const cfg = await apiGet('configuracion', 'limit=1');
+            if (cfg.length > 0) {
+                const c = cfg[0];
+                document.getElementById('cfgNombre').value = c.nombre_empresa || '';
+                document.getElementById('cfgTelefono').value = c.telefono || '';
+                document.getElementById('cfgDireccion').value = c.direccion || '';
+                document.getElementById('cfgIva').value = c.iva_porcentaje || 21;
+                document.getElementById('cfgLogo').value = c.logo_url || '';
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function saveEmpresa() {
+        const btn = document.getElementById('btnSaveEmpresa');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        try {
+            const cfg = await apiGet('configuracion', 'limit=1');
+            const data = {
+                nombre_empresa: document.getElementById('cfgNombre').value.trim(),
+                telefono: document.getElementById('cfgTelefono').value.trim(),
+                direccion: document.getElementById('cfgDireccion').value.trim(),
+                iva_porcentaje: parseFloat(document.getElementById('cfgIva').value) || 21,
+                logo_url: document.getElementById('cfgLogo').value.trim()
+            };
+            if (cfg.length > 0) {
+                await apiPatch('configuracion', cfg[0].id, data);
+            } else {
+                await apiPost('configuracion', data);
+            }
+            showToast('Configuración guardada', 'success');
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar Configuración';
+    }
+
+    async function changePassword() {
+        const actual = document.getElementById('passActual').value;
+        const nueva = document.getElementById('passNueva').value;
+        const nueva2 = document.getElementById('passNueva2').value;
+        if (!actual) { showToast('Ingresá la contraseña actual', 'error'); return; }
+        if (nueva.length < 6) { showToast('La nueva contraseña debe tener al menos 6 caracteres', 'error'); return; }
+        if (nueva !== nueva2) { showToast('Las contraseñas nuevas no coinciden', 'error'); return; }
+
+        const btn = document.getElementById('btnChangePass');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cambiando...';
+        try {
+            const token = getAccessToken();
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                method: 'PUT',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: nueva })
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.msg || 'Error al cambiar contraseña'); }
+            showToast('Contraseña cambiada. Volvé a iniciar sesión.', 'success');
+            setTimeout(() => logout(), 1500);
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-key"></i> Cambiar Contraseña';
+    }
+
+    async function loadUsers() {
+        const tbody = document.querySelector('#tableUsers tbody');
+        const empty = document.getElementById('usersEmpty');
+        try {
+            const data = await apiGet('perfiles', 'select=*&order=created_at.desc');
+            if (data.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+            tbody.innerHTML = data.map(u => `
+                <tr>
+                    <td>${escHtml(u.email)}</td>
+                    <td>${escHtml(u.nombre || '—')}</td>
+                    <td><span class="badge ${u.rol==='admin'?'badge-admin':'badge-user'}">${u.rol}</span></td>
+                    <td>
+                        ${u.id !== currentUser.id
+                            ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>`
+                            : '<span style="color:var(--text-light);font-size:0.78rem;">Vos</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error(e); showToast('Error al cargar usuarios', 'error'); }
+    }
+
+    function openUserModal() {
+        document.getElementById('newUserEmail').value = '';
+        document.getElementById('newUserName').value = '';
+        document.getElementById('newUserPass').value = '';
+        document.getElementById('newUserRole').value = 'usuario';
+        document.getElementById('modalUser').classList.add('open');
+    }
+
+    async function createUser() {
+        const email = document.getElementById('newUserEmail').value.trim();
+        const nombre = document.getElementById('newUserName').value.trim();
+        const password = document.getElementById('newUserPass').value;
+        const rol = document.getElementById('newUserRole').value;
+        if (!email) { showToast('Ingresá el email', 'error'); return; }
+        if (password.length < 6) { showToast('Contraseña mínimo 6 caracteres', 'error'); return; }
+
+        const btn = document.getElementById('btnCreateUser');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+        try {
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, data: { nombre } })
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.msg || 'Error al crear usuario'); }
+            const userData = await res.json();
+            if (userData.user) {
+                await new Promise(r => setTimeout(r, 500));
+                await apiPatch('perfiles', userData.user.id, { rol, nombre });
+            }
+            closeModal();
+            await loadUsers();
+            showToast('Usuario creado correctamente', 'success');
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear';
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        try {
+            await apiDelete('perfiles', userId);
+            showToast('Perfil eliminado. Para eliminar el usuario de Auth usá el panel de Supabase.', 'success');
+            await loadUsers();
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+    }
+
+    // ===== RESPALDO =====
+
+    async function descargarRespaldo() {
+        const btn = document.getElementById('btnDescargar');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Descargando...';
+        try {
+            const [
+                perfiles, tipos, clientes,
+                compras, detCompras,
+                ventas, detVentas,
+                transformaciones, detTransfE, detTransfS,
+                stock, gastos, historico, config
+            ] = await Promise.all([
+                apiGet('perfiles', 'select=*'),
+                apiGet('tipos_chatarra', 'select=*'),
+                apiGet('clientes_proveedores', 'select=*'),
+                apiGet('compras', 'select=*'),
+                apiGet('detalle_compras', 'select=*'),
+                apiGet('ventas', 'select=*'),
+                apiGet('detalle_ventas', 'select=*'),
+                apiGet('transformaciones', 'select=*'),
+                apiGet('detalle_transformacion_entrada', 'select=*'),
+                apiGet('detalle_transformacion_salida', 'select=*'),
+                apiGet('stock', 'select=*'),
+                apiGet('gastos_adicionales', 'select=*'),
+                apiGet('historico_precios', 'select=*'),
+                apiGet('configuracion', 'select=*')
+            ]);
+
+            const backup = {
+                version: 1,
+                fecha: new Date().toISOString(),
+                empresa: 'Khloe Global',
+                datos: {
+                    perfiles, tipos_chatarra: tipos, clientes_proveedores: clientes,
+                    compras, detalle_compras: detCompras,
+                    ventas, detalle_ventas: detVentas,
+                    transformaciones, detalle_transformacion_entrada: detTransfE, detalle_transformacion_salida: detTransfS,
+                    stock, gastos_adicionales: gastos, historico_precios: historico, configuracion: config
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const fechaStr = new Date().toISOString().split('T')[0];
+            a.href = url; a.download = `respaldo_${fechaStr}.json`; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Respaldo descargado exitosamente', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error al descargar: ' + e.message, 'error');
+        }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-download"></i> Descargar Todo';
+    }
+
+    function onFileSelected(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                backupFileData = JSON.parse(e.target.result);
+                if (!backupFileData.datos || !backupFileData.fecha) {
+                    showToast('Archivo de respaldo inválido', 'error');
+                    return;
+                }
+
+                const d = backupFileData.datos;
+                const resumen = [];
+                if (d.compras) resumen.push(`${d.compras.length} compras`);
+                if (d.ventas) resumen.push(`${d.ventas.length} ventas`);
+                if (d.transformaciones) resumen.push(`${d.transformaciones.length} transformaciones`);
+                if (d.gastos_adicionales) resumen.push(`${d.gastos_adicionales.length} gastos`);
+                if (d.stock) resumen.push(`${d.stock.length} registros de stock`);
+                if (d.tipos_chatarra) resumen.push(`${d.tipos_chatarra.length} materiales`);
+                if (d.clientes_proveedores) resumen.push(`${d.clientes_proveedores.length} contactos`);
+                if (d.perfiles) resumen.push(`${d.perfiles.length} usuarios`);
+                if (d.historico_precios) resumen.push(`${d.historico_precios.length} precios históricos`);
+
+                const infoEl = document.getElementById('restoreInfo');
+                infoEl.innerHTML = `
+                    <div class="restore-summary">
+                        <strong>Respaldo del ${formatDate(backupFileData.fecha)}</strong><br>
+                        ${resumen.join('<br>')}
+                    </div>
+                `;
+                infoEl.style.display = 'block';
+                document.getElementById('btnRestaurar').style.display = 'inline-flex';
+            } catch (err) {
+                showToast('Error al leer el archivo JSON', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function restaurarRespaldo() {
+        if (!backupFileData) return;
+        if (!confirm('¿Restaurar todos los datos desde el respaldo?\n\nADVERTENCIA: Los registros con el mismo ID se actualizarán. Esta acción NO se puede deshacer.')) return;
+
+        const btn = document.getElementById('btnRestaurar');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restaurando...';
+
+        const orden = [
+            { key: 'tipos_chatarra', table: 'tipos_chatarra' },
+            { key: 'clientes_proveedores', table: 'clientes_proveedores' },
+            { key: 'configuracion', table: 'configuracion' },
+            { key: 'stock', table: 'stock' },
+            { key: 'compras', table: 'compras' },
+            { key: 'detalle_compras', table: 'detalle_compras' },
+            { key: 'ventas', table: 'ventas' },
+            { key: 'detalle_ventas', table: 'detalle_ventas' },
+            { key: 'transformaciones', table: 'transformaciones' },
+            { key: 'detalle_transformacion_entrada', table: 'detalle_transformacion_entrada' },
+            { key: 'detalle_transformacion_salida', table: 'detalle_transformacion_salida' },
+            { key: 'gastos_adicionales', table: 'gastos_adicionales' },
+            { key: 'historico_precios', table: 'historico_precios' }
+        ];
+
+        let done = 0, skipped = 0, errors = 0;
+
+        for (const { key, table } of orden) {
+            const records = backupFileData.datos[key];
+            if (!records || records.length === 0) continue;
+
+            for (const rec of records) {
+                try {
+                    // Check if exists
+                    const existing = await apiGet(table, `id=eq.${rec.id}&limit=1`);
+                    if (existing.length > 0) {
+                        // Update
+                        const updateData = { ...rec };
+                        delete updateData.id;
+                        delete updateData.created_at;
+                        delete updateData.clientes_proveedores;
+                        delete updateData.tipos_chatarra;
+                        await apiPatch(table, rec.id, updateData);
+                    } else {
+                        await apiPost(table, rec);
+                    }
+                    done++;
+                } catch (err) {
+                    errors++;
+                    console.error(`Error en ${table} #${rec.id}:`, err);
+                }
+            }
+        }
+
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Restaurar Datos';
+        showToast(`Restauración completa: ${done} registros procesados, ${errors} errores.`, errors > 0 ? 'error' : 'success');
+        backupFileData = null;
+        document.getElementById('restoreInfo').style.display = 'none';
+        document.getElementById('btnRestaurar').style.display = 'none';
+        document.getElementById('fileRespaldo').value = '';
+    }
+
+    function closeModal() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+    }
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    function showToast(msg, type) {
+        const existing = document.querySelector('.toast'); if (existing) existing.remove();
+        const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --warning: #d97706;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1; --nav-hover: #fff;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-brand svg { width: 30px; height: 30px; color: var(--primary); }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: var(--nav-hover); background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+        /* FILTER BAR */
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; background: var(--card); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .period-btns { display: flex; gap: 4px; background: #f1f5f9; border-radius: 8px; padding: 3px; }
+        .period-btn { padding: 7px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--text-light); transition: all 0.2s; font-family: inherit; }
+        .period-btn.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .date-pickers { display: flex; gap: 8px; align-items: center; margin-left: 8px; }
+        .date-pickers input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; }
+        .date-pickers.hidden { display: none; }
+        .filter-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; background: #fff; font-family: inherit; min-width: 180px; }
+        .filter-bar-separator { width: 1px; height: 28px; background: var(--border); }
+
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 14px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-icon.amber { background: #fef3c7; color: #d97706; }
+        .stat-icon.purple { background: #ede9fe; color: #7c3aed; }
+        .stat-icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-info .stat-label { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-info .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+        .stat-info .stat-sub { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+
+        /* PER-PRODUCT CARDS */
+        .product-cards-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+        .product-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; margin-bottom: 24px; }
+        .product-mini-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
+        .product-mini-card .pmc-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+        .product-mini-card .pmc-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; }
+        .pmc-stat { text-align: center; }
+        .pmc-stat .pmc-val { font-weight: 700; font-size: 1rem; }
+        .pmc-stat .pmc-lbl { color: var(--text-light); font-size: 0.7rem; }
+
+        /* ROW */
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .row { grid-template-columns: 1fr; } .filter-bar { flex-direction: column; align-items: stretch; } .date-pickers { margin-left: 0; } .filter-bar-separator { display: none; } }
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+        .card-header { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .card-header select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; background: #fff; }
+        .chart-wrap { position: relative; height: 280px; }
+        .table-mini { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .table-mini th { text-align: left; padding: 8px 10px; color: var(--text-light); font-weight: 500; border-bottom: 2px solid var(--border); }
+        .table-mini td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        .table-mini tr:hover { background: #f8fafc; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-compra { background: #dbeafe; color: #1e40af; }
+        .badge-venta { background: #fce7f3; color: #9d174d; }
+        .badge-transf { background: #fef3c7; color: #92400e; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2rem; margin-bottom: 8px; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Dashboard</h1>
+
+        <!-- FILTROS -->
+        <div class="filter-bar">
+            <span style="font-size:0.82rem;font-weight:600;color:var(--text-light);">Período:</span>
+            <div class="period-btns" id="periodBtns">
+                <button class="period-btn active" data-period="dia">Día</button>
+                <button class="period-btn" data-period="semana">Semana</button>
+                <button class="period-btn" data-period="mes">Mes</button>
+                <button class="period-btn" data-period="custom">Personalizado</button>
+            </div>
+            <div class="date-pickers hidden" id="customDates">
+                <input type="date" id="filtDesde" style="width:130px;">
+                <span style="font-size:0.82rem;">a</span>
+                <input type="date" id="filtHasta" style="width:130px;">
+            </div>
+            <div class="filter-bar-separator"></div>
+            <span style="font-size:0.82rem;font-weight:600;color:var(--text-light);">Producto:</span>
+            <select class="filter-select" id="filtProducto">
+                <option value="">Todos los materiales</option>
+            </select>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-boxes"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Stock Total (kg)</div>
+                    <div class="stat-value" id="statStock">—</div>
+                    <div class="stat-sub">Materiales en depósito</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-cart-plus"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label" id="lblCompras">Compras (período)</div>
+                    <div class="stat-value" id="statCompras">—</div>
+                    <div class="stat-sub" id="statComprasCant">—</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber"><i class="fas fa-store"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label" id="lblVentas">Ventas (período)</div>
+                    <div class="stat-value" id="statVentas">—</div>
+                    <div class="stat-sub" id="statVentasCant">—</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Ganancia (período)</div>
+                    <div class="stat-value" id="statGanancia">—</div>
+                    <div class="stat-sub" id="statGananciaMargen">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PER-PRODUCT BREAKDOWN -->
+        <div class="product-cards-title">Resumen por Material</div>
+        <div class="product-cards-grid" id="productCards">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+        </div>
+
+        <!-- CHART + ÚLTIMOS MOVIMIENTOS -->
+        <div class="row">
+            <div class="card">
+                <div class="card-header">
+                    <span>Historial de Precios</span>
+                    <select id="chartMaterial">
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+                <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                <div id="chartEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-chart-line"></i><p>Seleccioná un material para ver su historial</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">Últimos Movimientos</div>
+                <table class="table-mini" id="tableMovimientos">
+                    <thead><tr><th>Tipo</th><th>Fecha</th><th>Detalle</th><th>Total</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <div id="movEmpty" class="empty-state"><i class="fas fa-inbox"></i><p>Sin movimientos recientes</p></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        createNavbar('dashboard');
+
+        let priceChart = null;
+        const chartMaterial = document.getElementById('chartMaterial');
+        const chartEmpty = document.getElementById('chartEmpty');
+        const canvas = document.getElementById('priceChart');
+        let allMateriales = [];
+        let currentPeriod = 'dia';
+        let currentProductId = '';
+
+        // ===== PERIOD UTILS =====
+        function getPeriodDates() {
+            const hoy = new Date();
+            let desde, hasta;
+
+            switch (currentPeriod) {
+                case 'dia':
+                    desde = hoy.toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'semana':
+                    const diaSem = hoy.getDay();
+                    const lunes = new Date(hoy);
+                    lunes.setDate(hoy.getDate() - (diaSem === 0 ? 6 : diaSem - 1));
+                    desde = lunes.toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'mes':
+                    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'custom':
+                    desde = document.getElementById('filtDesde').value;
+                    hasta = document.getElementById('filtHasta').value;
+                    if (hasta) {
+                        const h = new Date(hasta + 'T00:00:00');
+                        h.setDate(h.getDate() + 1);
+                        hasta = h.toISOString().split('T')[0];
+                    }
+                    break;
+            }
+            return { desde, hasta };
+        }
+
+        function getPeriodLabel() {
+            switch (currentPeriod) {
+                case 'dia': return 'Hoy';
+                case 'semana': return 'Esta Semana';
+                case 'mes': return 'Este Mes';
+                default: return 'Período';
+            }
+        }
+
+        // ===== INIT =====
+        (async () => {
+            const ok = await checkAuth(true);
+            if (!ok) return;
+
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('filtDesde').value = hoy;
+            document.getElementById('filtHasta').value = hoy;
+
+            allMateriales = await apiGet('tipos_chatarra', 'activo=eq.true&order=nombre.asc');
+            const sel = document.getElementById('filtProducto');
+            sel.innerHTML = '<option value="">Todos los materiales</option>';
+            allMateriales.forEach(m => { sel.innerHTML += `<option value="${m.id}">${escHtml(m.nombre)}</option>`; });
+
+            chartMaterial.innerHTML = '<option value="">Seleccionar material...</option>';
+            allMateriales.forEach(m => { chartMaterial.innerHTML += `<option value="${m.id}">${escHtml(m.nombre)}</option>`; });
+            chartMaterial.addEventListener('change', () => {
+                if (chartMaterial.value) loadChart(chartMaterial.value);
+            });
+
+            // Period buttons
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentPeriod = btn.dataset.period;
+                    const customDates = document.getElementById('customDates');
+                    if (currentPeriod === 'custom') {
+                        customDates.classList.remove('hidden');
+                    } else {
+                        customDates.classList.add('hidden');
+                    }
+                    refreshAll();
+                });
+            });
+
+            // Product filter
+            sel.addEventListener('change', () => {
+                currentProductId = sel.value;
+                refreshAll();
+            });
+
+            // Custom dates
+            document.getElementById('filtDesde').addEventListener('change', () => {
+                if (currentPeriod === 'custom') refreshAll();
+            });
+            document.getElementById('filtHasta').addEventListener('change', () => {
+                if (currentPeriod === 'custom') refreshAll();
+            });
+
+            refreshAll();
+        })();
+
+        async function refreshAll() {
+            await Promise.all([
+                loadStats(),
+                loadProductCards(),
+                loadMovimientos()
+            ]);
+        }
+
+        // ===== STATS =====
+        async function loadStats() {
+            try {
+                const { desde, hasta } = getPeriodDates();
+                const label = getPeriodLabel();
+                document.getElementById('lblCompras').textContent = `Compras (${label})`;
+                document.getElementById('lblVentas').textContent = `Ventas (${label})`;
+
+                // Stock total (always global, optionally filtered by product)
+                let stockQuery = 'select=tipo_chatarra_id,cantidad';
+                if (currentProductId) stockQuery += `&tipo_chatarra_id=eq.${currentProductId}`;
+                const stock = await apiGet('stock', stockQuery);
+                const totalStock = stock.reduce((sum, s) => sum + parseFloat(s.cantidad), 0);
+                document.getElementById('statStock').textContent = formatNum(totalStock, 0);
+
+                // Compras in period
+                let comprasQuery = `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total`;
+                if (currentProductId) {
+                    const compIds = await getComprasIdsConProducto(desde, hasta, currentProductId);
+                    if (compIds.length > 0) comprasQuery += `&id=in.(${compIds.join(',')})`;
+                }
+                const comprasData = await apiGet('compras', comprasQuery);
+                let compras;
+                if (currentProductId && comprasData.length === 0 && !comprasQuery.includes('id=in')) {
+                    compras = [];
+                } else {
+                    compras = comprasData;
+                }
+                const totalCompras = compras.reduce((sum, c) => sum + parseFloat(c.total), 0);
+                document.getElementById('statCompras').textContent = formatMoney(totalCompras);
+                document.getElementById('statComprasCant').textContent = `${compras.length} operaciones`;
+
+                // Ventas in period
+                let ventasQuery = `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total,ganancia`;
+                if (currentProductId) {
+                    const ventIds = await getVentasIdsConProducto(desde, hasta, currentProductId);
+                    if (ventIds.length > 0) ventasQuery += `&id=in.(${ventIds.join(',')})`;
+                }
+                const ventasData = await apiGet('ventas', ventasQuery);
+                let ventas;
+                if (currentProductId && ventasData.length === 0 && !ventasQuery.includes('id=in')) {
+                    ventas = [];
+                } else {
+                    ventas = ventasData;
+                }
+                const totalVentas = ventas.reduce((sum, v) => sum + parseFloat(v.total), 0);
+                document.getElementById('statVentas').textContent = formatMoney(totalVentas);
+                document.getElementById('statVentasCant').textContent = `${ventas.length} operaciones`;
+
+                // Ganancia
+                const totalGanancia = ventas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
+                document.getElementById('statGanancia').textContent = formatMoney(totalGanancia);
+                const margen = totalVentas > 0 ? (totalGanancia / (totalVentas / 1.21) * 100) : 0;
+                document.getElementById('statGananciaMargen').textContent = `Margen aprox: ${formatNum(margen, 1)}%`;
+            } catch (e) {
+                console.error('Error cargando stats:', e);
+                showToast('Error al cargar estadisticas', 'error');
+            }
+        }
+
+        async function getComprasIdsConProducto(desde, hasta, productId) {
+            const compras = await apiGet('compras', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id`);
+            if (compras.length === 0) return [];
+            const ids = compras.map(c => c.id);
+            const detalles = await apiGet('detalle_compras', `tipo_chatarra_id=eq.${productId}&compra_id=in.(${ids.join(',')})&select=compra_id`);
+            return [...new Set(detalles.map(d => d.compra_id))];
+        }
+
+        async function getVentasIdsConProducto(desde, hasta, productId) {
+            const ventas = await apiGet('ventas', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id`);
+            if (ventas.length === 0) return [];
+            const ids = ventas.map(v => v.id);
+            const detalles = await apiGet('detalle_ventas', `tipo_chatarra_id=eq.${productId}&venta_id=in.(${ids.join(',')})&select=venta_id`);
+            return [...new Set(detalles.map(d => d.venta_id))];
+        }
+
+        // ===== PER-PRODUCT CARDS =====
+        async function loadProductCards() {
+            const container = document.getElementById('productCards');
+            const { desde, hasta } = getPeriodDates();
+
+            try {
+                const stock = await apiGet('stock', 'select=tipo_chatarra_id,cantidad');
+                const mats = allMateriales;
+                if (mats.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-recycle"></i><p>Sin materiales cargados</p></div>';
+                    return;
+                }
+
+                const stockMap = {};
+                stock.forEach(s => { stockMap[s.tipo_chatarra_id] = parseFloat(s.cantidad); });
+
+                // Get purchases and sales per material in period
+                const compras = await apiGet('compras', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id`);
+                const ventas = await apiGet('ventas', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id`);
+
+                let detCompras = [], detVentas = [];
+                if (compras.length > 0) {
+                    detCompras = await apiGet('detalle_compras', `compra_id=in.(${compras.map(c => c.id).join(',')})&select=tipo_chatarra_id,cantidad,precio_unitario`);
+                }
+                if (ventas.length > 0) {
+                    detVentas = await apiGet('detalle_ventas', `venta_id=in.(${ventas.map(v => v.id).join(',')})&select=tipo_chatarra_id,cantidad,precio_unitario,costo_unitario`);
+                }
+
+                // Aggregate per material
+                const agg = {};
+                mats.forEach(m => { agg[m.id] = { nombre: m.nombre, stock: 0, compraKg: 0, compraMonto: 0, ventaKg: 0, ventaMonto: 0, ganancia: 0 }; });
+                stock.forEach(s => { if (agg[s.tipo_chatarra_id]) agg[s.tipo_chatarra_id].stock = parseFloat(s.cantidad); });
+                detCompras.forEach(d => {
+                    const id = d.tipo_chatarra_id;
+                    if (!agg[id]) return;
+                    agg[id].compraKg += parseFloat(d.cantidad);
+                    agg[id].compraMonto += parseFloat(d.cantidad) * parseFloat(d.precio_unitario);
+                });
+                detVentas.forEach(d => {
+                    const id = d.tipo_chatarra_id;
+                    if (!agg[id]) return;
+                    agg[id].ventaKg += parseFloat(d.cantidad);
+                    agg[id].ventaMonto += parseFloat(d.cantidad) * parseFloat(d.precio_unitario);
+                    agg[id].ganancia += (parseFloat(d.precio_unitario) - parseFloat(d.costo_unitario)) * parseFloat(d.cantidad);
+                });
+
+                // Filter by product
+                const filtered = currentProductId
+                    ? [[currentProductId, agg[currentProductId]]].filter(([,v]) => v)
+                    : Object.entries(agg);
+
+                // Sort by stock descending
+                filtered.sort(([, a], [, b]) => b.stock - a.stock);
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle"></i><p>Sin datos para el período</p></div>';
+                    return;
+                }
+
+                container.innerHTML = filtered.map(([, a]) => `
+                    <div class="product-mini-card">
+                        <div class="pmc-name">${escHtml(a.nombre)}</div>
+                        <div class="pmc-stats">
+                            <div class="pmc-stat"><div class="pmc-val">${formatNum(a.stock, 0)}</div><div class="pmc-lbl">Stock kg</div></div>
+                            <div class="pmc-stat"><div class="pmc-val" style="color:#2563eb;">${formatNum(a.compraKg, 0)}</div><div class="pmc-lbl">Comprado kg</div></div>
+                            <div class="pmc-stat"><div class="pmc-val" style="color:#d97706;">${formatNum(a.ventaKg, 0)}</div><div class="pmc-lbl">Vendido kg</div></div>
+                            <div class="pmc-stat"><div class="pmc-val" style="color:${a.ganancia>=0?'var(--primary)':'var(--danger)'};">${formatMoney(a.ganancia)}</div><div class="pmc-lbl">Ganancia</div></div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error cargando product cards:', e);
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error al cargar</p></div>';
+            }
+        }
+
+        // ===== CHART =====
+        async function loadChart(tipoId) {
+            try {
+                const data = await apiGet('historico_precios', `tipo_chatarra_id=eq.${tipoId}&order=fecha.asc&limit=30`);
+                const nombre = chartMaterial.options[chartMaterial.selectedIndex].text;
+
+                if (data.length === 0) {
+                    chartEmpty.style.display = 'block';
+                    canvas.style.display = 'none';
+                    if (priceChart) { priceChart.destroy(); priceChart = null; }
+                    return;
+                }
+                chartEmpty.style.display = 'none';
+                canvas.style.display = 'block';
+
+                const labels = data.map(d => formatDate(d.fecha));
+                const compraData = data.map(d => d.precio_compra ? parseFloat(d.precio_compra) : null);
+                const ventaData = data.map(d => d.precio_venta ? parseFloat(d.precio_venta) : null);
+
+                if (priceChart) priceChart.destroy();
+                priceChart = new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Precio Compra', data: compraData, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: false, tension: 0.3, pointRadius: 3, spanGaps: false },
+                            { label: 'Precio Venta', data: ventaData, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.08)', fill: false, tension: 0.3, pointRadius: 3, spanGaps: false }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+                            tooltip: { callbacks: { label: (ctx) => formatMoney(ctx.raw) } }
+                        },
+                        scales: {
+                            y: { ticks: { callback: v => formatMoney(v) }, beginAtZero: false },
+                            x: { ticks: { maxTicksLimit: 8 } }
+                        }
+                    }
+                });
+            } catch (e) { console.error('Error cargando chart:', e); }
+        }
+
+        // ===== ÚLTIMOS MOVIMIENTOS =====
+        async function loadMovimientos() {
+            const tbody = document.querySelector('#tableMovimientos tbody');
+            const emptyEl = document.getElementById('movEmpty');
+            const { desde, hasta } = getPeriodDates();
+
+            try {
+                const compQB = `fecha=gte.${desde}&fecha=lt.${hasta}`;
+                let compras = await apiGet('compras', `${compQB}&select=id,fecha,total,proveedor_id,clientes_proveedores(nombre)&order=fecha.desc&limit=10`);
+                let ventas = await apiGet('ventas', `${compQB}&select=id,fecha,total,cliente_id,clientes_proveedores(nombre)&order=fecha.desc&limit=10`);
+                let transfs = await apiGet('transformaciones', `${compQB}&select=id,fecha,descripcion&order=fecha.desc&limit=10`);
+
+                // Filter by product if needed
+                if (currentProductId) {
+                    const compIds = await getComprasIdsConProducto(desde, hasta, currentProductId);
+                    compras = compras.filter(c => compIds.includes(c.id));
+                    const ventIds = await getVentasIdsConProducto(desde, hasta, currentProductId);
+                    ventas = ventas.filter(v => ventIds.includes(v.id));
+                    // Transf: check if product appears in entrada or salida
+                    if (transfs.length > 0) {
+                        const tIds = transfs.map(t => t.id);
+                        const tEntrada = await apiGet('detalle_transformacion_entrada', `tipo_chatarra_id=eq.${currentProductId}&transformacion_id=in.(${tIds.join(',')})&select=transformacion_id`);
+                        const tSalida = await apiGet('detalle_transformacion_salida', `tipo_chatarra_id=eq.${currentProductId}&transformacion_id=in.(${tIds.join(',')})&select=transformacion_id`);
+                        const relevantIds = new Set([...tEntrada.map(d => d.transformacion_id), ...tSalida.map(d => d.transformacion_id)]);
+                        transfs = transfs.filter(t => relevantIds.has(t.id));
+                    }
+                }
+
+                const movimientos = [
+                    ...compras.map(c => ({ tipo: 'Compra', fecha: c.fecha, total: c.total, nombre: c.clientes_proveedores?.nombre || '—', id: c.id })),
+                    ...ventas.map(v => ({ tipo: 'Venta', fecha: v.fecha, total: v.total, nombre: v.clientes_proveedores?.nombre || '—', id: v.id })),
+                    ...transfs.map(t => ({ tipo: 'Transformación', fecha: t.fecha, total: 0, nombre: t.descripcion || '—', id: t.id }))
+                ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 12);
+
+                if (movimientos.length === 0) {
+                    document.getElementById('tableMovimientos').style.display = 'none';
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+                document.getElementById('tableMovimientos').style.display = 'table';
+                emptyEl.style.display = 'none';
+
+                tbody.innerHTML = movimientos.map(m => {
+                    const badgeClass = m.tipo === 'Compra' ? 'badge-compra' : (m.tipo === 'Venta' ? 'badge-venta' : 'badge-transf');
+                    return `
+                    <tr>
+                        <td><span class="badge ${badgeClass}">${m.tipo}</span></td>
+                        <td>${formatDateTime(m.fecha)}</td>
+                        <td style="font-weight:600;">${escHtml(m.nombre)}</td>
+                        <td>${m.tipo === 'Transformación' ? '—' : formatMoney(m.total)}</td>
+                    </tr>
+                `}).join('');
+            } catch (e) { console.error('Error cargando movimientos:', e); }
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast'); if (existing) existing.remove();
+            const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+            document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

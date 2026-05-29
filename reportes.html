@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-brand svg { width: 30px; height: 30px; color: var(--primary); }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1.05rem; font-weight: 600; }
+
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+
+        .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 0.78rem; font-weight: 500; color: var(--text-light); }
+        .filter-group input, .filter-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+        .text-right { text-align: right; }
+        .text-positive { color: var(--primary); font-weight: 600; }
+        .text-negative { color: var(--danger); font-weight: 600; }
+
+        /* TABS */
+        .tabs { display: flex; margin-bottom: 24px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+        .tab { flex: 1; padding: 14px 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-light); background: var(--card); border: none; transition: all 0.2s; }
+        .tab.active { color: #fff; background: var(--primary); }
+        .tab:hover:not(.active) { background: #f8fafc; }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .main { padding: 16px; }
+            .tabs { flex-direction: column; }
+            .filters { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Reportes</h1>
+
+        <div class="tabs">
+            <button class="tab active" data-section="ganancias">Ganancias</button>
+            <button class="tab" data-section="stock">Stock Actual</button>
+            <button class="tab" data-section="movimientos">Compras / Ventas</button>
+        </div>
+
+        <!-- ===== REPORTE DE GANANCIAS ===== -->
+        <div class="section-content active" id="section-ganancias">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Ganancias Brutas por Material</h3>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('ganancias')"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="imprimir('ganancias')"><i class="fas fa-print"></i> PDF</button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="date" id="ganDesde">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="date" id="ganHasta">
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="loadGanancias()"><i class="fas fa-filter"></i> Generar</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableGanancias">
+                        <thead><tr>
+                            <th>Material</th><th class="text-right">Cantidad Vendida</th><th class="text-right">Costo Promedio</th><th class="text-right">Precio Venta Prom.</th><th class="text-right">Ganancia Total</th><th class="text-right">Margen %</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="ganEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-chart-bar"></i><p>Seleccioná un período y hacé clic en Generar</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTE DE STOCK ===== -->
+        <div class="section-content" id="section-stock">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Stock Actual por Material</h3>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('stock')"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="imprimir('stock')"><i class="fas fa-print"></i> PDF</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableStock">
+                        <thead><tr>
+                            <th>Material</th><th class="text-right">Cantidad</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="stockEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-boxes"></i><p>No hay stock registrado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTE DE MOVIMIENTOS ===== -->
+        <div class="section-content" id="section-movimientos">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Compras y Ventas por Período</h3>
+                    <div>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('movimientos')"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="imprimir('movimientos')"><i class="fas fa-print"></i> PDF</button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="date" id="movDesde">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="date" id="movHasta">
+                    </div>
+                    <div class="filter-group">
+                        <label>Tipo</label>
+                        <select id="movTipo" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                            <option value="todos">Todos</option>
+                            <option value="compra">Compras</option>
+                            <option value="venta">Ventas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <input type="text" id="movBuscar" placeholder="ID, persona..." style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="loadMovimientos()"><i class="fas fa-filter"></i> Generar</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableMovimientos">
+                        <thead><tr>
+                            <th>ID</th><th>Tipo</th><th>Fecha</th><th>Persona</th><th class="text-right">Subtotal</th><th class="text-right">IVA</th><th class="text-right">Total</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="movEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-exchange-alt"></i><p>No hay movimientos en el período seleccionado</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        createNavbar('reportes');
+
+        let stockData = [];
+
+        (async () => {
+            if (!(await checkAuth(true))) return;
+            const hoy = new Date().toISOString().split('T')[0];
+            const mesInicio = hoy.substring(0, 7) + '-01';
+            document.getElementById('ganDesde').value = mesInicio;
+            document.getElementById('ganHasta').value = hoy;
+            document.getElementById('movDesde').value = mesInicio;
+            document.getElementById('movHasta').value = hoy;
+            loadStock();
+        })();
+
+        // ===== TABS =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + tab.dataset.section).classList.add('active');
+            });
+        });
+
+        // ===== GANANCIAS =====
+        async function loadGanancias() {
+            const desde = document.getElementById('ganDesde').value;
+            const hasta = document.getElementById('ganHasta').value;
+            const tbody = document.querySelector('#tableGanancias tbody');
+            const empty = document.getElementById('ganEmpty');
+            if (!desde || !hasta) { showToast('Seleccioná el período', 'error'); return; }
+
+            try {
+                const detalle = await apiGet('detalle_ventas', `select=tipo_chatarra_id,cantidad,precio_unitario,costo_unitario,subtotal,tipos_chatarra(nombre,unidad_medida)&ventas(fecha)=gte.${desde}T00:00:00&ventas(fecha)=lt.${hasta}T23:59:59`);
+
+                if (detalle.length === 0) {
+                    tbody.innerHTML = ''; empty.style.display = 'block'; return;
+                }
+                empty.style.display = 'none';
+
+                const agrupado = {};
+                detalle.forEach(d => {
+                    const key = d.tipo_chatarra_id;
+                    if (!agrupado[key]) {
+                        agrupado[key] = {
+                            nombre: d.tipos_chatarra?.nombre || 'ID ' + key,
+                            unidad: d.tipos_chatarra?.unidad_medida || '',
+                            cantidad: 0, costoTotal: 0, ventaTotal: 0, subtotal: 0
+                        };
+                    }
+                    const g = agrupado[key];
+                    g.cantidad += parseFloat(d.cantidad);
+                    g.costoTotal += parseFloat(d.costo_unitario) * parseFloat(d.cantidad);
+                    g.ventaTotal += parseFloat(d.precio_unitario) * parseFloat(d.cantidad);
+                    g.subtotal += parseFloat(d.subtotal);
+                });
+
+                tbody.innerHTML = Object.values(agrupado).map(g => {
+                    const costoProm = g.cantidad > 0 ? g.costoTotal / g.cantidad : 0;
+                    const ventaProm = g.cantidad > 0 ? g.ventaTotal / g.cantidad : 0;
+                    const ganancia = g.ventaTotal - g.costoTotal;
+                    const margen = g.ventaTotal > 0 ? (ganancia / g.ventaTotal * 100) : 0;
+                    return `<tr>
+                        <td><strong>${escHtml(g.nombre)}</strong></td>
+                        <td class="text-right">${formatNum(g.cantidad, 2)} ${g.unidad}</td>
+                        <td class="text-right">${formatMoney(costoProm)}</td>
+                        <td class="text-right">${formatMoney(ventaProm)}</td>
+                        <td class="text-right ${ganancia>=0?'text-positive':'text-negative'}">${formatMoney(ganancia)}</td>
+                        <td class="text-right ${margen>=0?'text-positive':'text-negative'}">${formatNum(margen, 1)}%</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) { console.error(e); showToast('Error al cargar ganancias', 'error'); }
+        }
+
+        // ===== STOCK =====
+        async function loadStock() {
+            const tbody = document.querySelector('#tableStock tbody');
+            const empty = document.getElementById('stockEmpty');
+            try {
+                const [stock, mats] = await Promise.all([
+                    apiGet('stock', 'select=tipo_chatarra_id,cantidad'),
+                    apiGet('tipos_chatarra', 'activo=eq.true&select=id,nombre,unidad_medida')
+                ]);
+                const matMap = {};
+                mats.forEach(m => { matMap[m.id] = m; });
+                stockData = stock;
+
+                const merged = stock.map(s => ({
+                    ...s,
+                    material: matMap[s.tipo_chatarra_id] || null
+                })).filter(s => s.material && parseFloat(s.cantidad) > 0);
+
+                if (merged.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                tbody.innerHTML = merged.map(s => {
+                    const m = s.material;
+                    return `<tr>
+                        <td><strong>${escHtml(m.nombre)}</strong></td>
+                        <td class="text-right">${formatNum(s.cantidad, 2)} ${m.unidad_medida}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) { console.error(e); showToast('Error al cargar stock', 'error'); }
+        }
+
+        // ===== MOVIMIENTOS =====
+        async function loadMovimientos() {
+            const desde = document.getElementById('movDesde').value;
+            const hasta = document.getElementById('movHasta').value;
+            const tipo = document.getElementById('movTipo').value;
+            const buscar = document.getElementById('movBuscar').value.trim().toLowerCase();
+            const tbody = document.querySelector('#tableMovimientos tbody');
+            const empty = document.getElementById('movEmpty');
+            if (!desde || !hasta) { showToast('Seleccioná el período', 'error'); return; }
+
+            try {
+                let compras = [], ventas = [];
+                const queryBase = `fecha=gte.${desde}T00:00:00&fecha=lt.${hasta}T23:59:59&order=fecha.desc&limit=200`;
+
+                if (tipo === 'todos' || tipo === 'compra') {
+                    compras = await apiGet('compras', queryBase + '&select=id,fecha,subtotal,iva,total,proveedor_id,clientes_proveedores(nombre)');
+                }
+                if (tipo === 'todos' || tipo === 'venta') {
+                    ventas = await apiGet('ventas', queryBase + '&select=id,fecha,subtotal,iva,total,cliente_id,clientes_proveedores(nombre)');
+                }
+
+                let todos = [
+                    ...compras.map(c => ({ ...c, _tipo: 'Compra', _persona: c.clientes_proveedores?.nombre })),
+                    ...ventas.map(v => ({ ...v, _tipo: 'Venta', _persona: v.clientes_proveedores?.nombre }))
+                ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+                // Buscador
+                if (buscar) {
+                    todos = todos.filter(m => {
+                        return m.id.toString().includes(buscar) ||
+                            (m._persona || '').toLowerCase().includes(buscar) ||
+                            m._tipo.toLowerCase().includes(buscar);
+                    });
+                }
+
+                if (todos.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                tbody.innerHTML = todos.map(m => `
+                    <tr>
+                        <td>#${m.id}</td>
+                        <td>${m._tipo}</td>
+                        <td>${formatDateTime(m.fecha)}</td>
+                        <td>${escHtml(m._persona || '—')}</td>
+                        <td class="text-right">${formatMoney(m.subtotal)}</td>
+                        <td class="text-right">${formatMoney(m.iva)}</td>
+                        <td class="text-right"><strong>${formatMoney(m.total)}</strong></td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); showToast('Error al cargar movimientos', 'error'); }
+        }
+
+        // ===== EXPORT CSV =====
+        function exportarCSV(tipo) {
+            let tableId, filename;
+            if (tipo === 'ganancias') { tableId = 'tableGanancias'; filename = 'ganancias.csv'; }
+            else if (tipo === 'stock') { tableId = 'tableStock'; filename = 'stock.csv'; }
+            else { tableId = 'tableMovimientos'; filename = 'movimientos.csv'; }
+
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            let csv = '';
+            table.querySelectorAll('tr').forEach(row => {
+                const cols = [];
+                row.querySelectorAll('th, td').forEach(cell => {
+                    cols.push('"' + (cell.textContent || '').replace(/"/g, '""').trim() + '"');
+                });
+                csv += cols.join(',') + '\n';
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado como CSV', 'success');
+        }
+
+        function imprimir(tipo) {
+            const sectionId = tipo === 'ganancias' ? 'section-ganancias'
+                : tipo === 'stock' ? 'section-stock' : 'section-movimientos';
+            const content = document.getElementById(sectionId).querySelector('.card').cloneNode(true);
+            const printDiv = document.createElement('div');
+            printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
+            printDiv.innerHTML = `<h1 style="margin-bottom:16px;">Reporte</h1>${content.innerHTML}`;
+            printDiv.querySelectorAll('.btn').forEach(b => b.style.display = 'none');
+            document.body.appendChild(printDiv);
+            window.print();
+            document.body.removeChild(printDiv);
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast'); if (existing) existing.remove();
+            const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+            document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

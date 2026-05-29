@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja — Khloe Global</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
+            --bg: #f1f5f9; --card: #fff; --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0; --danger: #dc2626; --warning: #d97706;
+            --nav-bg: #0f172a; --nav-text: #cbd5e1;
+            --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .navbar { background: var(--nav-bg); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.15rem; }
+        .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; }
+        .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .nav-menu { list-style: none; display: flex; gap: 4px; align-items: center; }
+        .nav-menu li a { color: var(--nav-text); text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-menu li a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .nav-menu li a.active { color: #fff; background: var(--primary); }
+        @media (max-width: 768px) {
+            .nav-toggle { display: block; }
+            .nav-menu { position: fixed; top: 0; right: -280px; width: 270px; height: 100vh; background: var(--nav-bg); flex-direction: column; padding: 80px 20px 20px; gap: 8px; transition: right 0.3s; align-items: stretch; overflow-y: auto; }
+            .nav-menu.open { right: 0; }
+        }
+
+        .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+
+        /* FILTER BAR */
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; background: var(--card); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .period-btns { display: flex; gap: 4px; background: #f1f5f9; border-radius: 8px; padding: 3px; }
+        .period-btn { padding: 7px 16px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--text-light); transition: all 0.2s; font-family: inherit; }
+        .period-btn.active { background: #fff; color: var(--primary); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .date-pickers { display: flex; gap: 8px; align-items: center; margin-left: 8px; }
+        .date-pickers input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; }
+        .date-pickers.hidden { display: none; }
+        .filter-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.82rem; background: #fff; font-family: inherit; min-width: 140px; }
+        .filter-bar-separator { width: 1px; height: 28px; background: var(--border); }
+
+        /* STATS */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 14px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-info .stat-label { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-info .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+        .stat-info .stat-sub { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+
+        /* TABLE */
+        .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .card-header { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .btn { padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #e2e8f0; color: var(--text); } .btn-secondary:hover { background: #cbd5e1; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+        .text-right { text-align: right; }
+        .text-green { color: var(--primary); font-weight: 600; }
+        .text-red { color: var(--danger); font-weight: 600; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-entrada { background: #d1fae5; color: #065f46; }
+        .badge-salida { background: #fee2e2; color: #991b1b; }
+        .badge-gasto { background: #fff7ed; color: #9a3412; }
+
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) { .filter-bar { flex-direction: column; align-items: stretch; } .date-pickers { margin-left: 0; } .filter-bar-separator { display: none; } }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <h1 class="page-title">Caja</h1>
+
+        <!-- FILTROS -->
+        <div class="filter-bar">
+            <span style="font-size:0.82rem;font-weight:600;color:var(--text-light);">Período:</span>
+            <div class="period-btns" id="periodBtns">
+                <button class="period-btn active" data-period="mes">Mes</button>
+                <button class="period-btn" data-period="semana">Semana</button>
+                <button class="period-btn" data-period="dia">Día</button>
+                <button class="period-btn" data-period="custom">Personalizado</button>
+            </div>
+            <div class="date-pickers hidden" id="customDates">
+                <input type="date" id="filtDesde" style="width:130px;">
+                <span style="font-size:0.82rem;">a</span>
+                <input type="date" id="filtHasta" style="width:130px;">
+            </div>
+            <div class="filter-bar-separator"></div>
+            <span style="font-size:0.82rem;font-weight:600;color:var(--text-light);">Tipo:</span>
+            <select class="filter-select" id="filtTipo">
+                <option value="todos">Todos</option>
+                <option value="entrada">Entradas</option>
+                <option value="salida">Salidas</option>
+            </select>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-arrow-down"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Ingresos</div>
+                    <div class="stat-value text-green" id="statIngresos">—</div>
+                    <div class="stat-sub" id="statIngresosCant">—</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="fas fa-arrow-up"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Egresos</div>
+                    <div class="stat-value text-red" id="statEgresos">—</div>
+                    <div class="stat-sub" id="statEgresosCant">—</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-balance-scale"></i></div>
+                <div class="stat-info">
+                    <div class="stat-label">Saldo</div>
+                    <div class="stat-value" id="statSaldo">—</div>
+                    <div class="stat-sub">Ingresos - Egresos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOVIMIENTOS -->
+        <div class="card">
+            <div class="card-header">
+                <span>Movimientos de Caja</span>
+                <div>
+                    <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table id="tableCaja">
+                    <thead><tr>
+                        <th>Tipo</th><th>Fecha</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-right">Saldo Acum.</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="cajaEmpty" class="empty-state" style="display:none;">
+                <i class="fas fa-cash-register"></i><p>Sin movimientos en el período</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        createNavbar('caja');
+
+        let movimientosData = [];
+        let currentPeriod = 'mes';
+
+        function getPeriodDates() {
+            const hoy = new Date();
+            let desde, hasta;
+
+            switch (currentPeriod) {
+                case 'dia':
+                    desde = hoy.toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'semana':
+                    const diaSem = hoy.getDay();
+                    const lunes = new Date(hoy);
+                    lunes.setDate(hoy.getDate() - (diaSem === 0 ? 6 : diaSem - 1));
+                    desde = lunes.toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'mes':
+                    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    break;
+                case 'custom':
+                    desde = document.getElementById('filtDesde').value;
+                    hasta = document.getElementById('filtHasta').value;
+                    if (hasta) {
+                        const h = new Date(hasta + 'T00:00:00');
+                        h.setDate(h.getDate() + 1);
+                        hasta = h.toISOString().split('T')[0];
+                    }
+                    break;
+            }
+            return { desde, hasta };
+        }
+
+        (async () => {
+            if (!(await checkAuth(true))) return;
+
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('filtDesde').value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('filtHasta').value = hoy;
+
+            // Period buttons
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentPeriod = btn.dataset.period;
+                    const customDates = document.getElementById('customDates');
+                    customDates.classList.toggle('hidden', currentPeriod !== 'custom');
+                    loadCaja();
+                });
+            });
+
+            // Tipo filter
+            document.getElementById('filtTipo').addEventListener('change', loadCaja);
+
+            // Custom dates
+            document.getElementById('filtDesde').addEventListener('change', () => { if (currentPeriod === 'custom') loadCaja(); });
+            document.getElementById('filtHasta').addEventListener('change', () => { if (currentPeriod === 'custom') loadCaja(); });
+
+            await loadCaja();
+        })();
+
+        async function loadCaja() {
+            const { desde, hasta } = getPeriodDates();
+            const tipo = document.getElementById('filtTipo').value;
+            const tbody = document.querySelector('#tableCaja tbody');
+            const empty = document.getElementById('cajaEmpty');
+
+            try {
+                const queryBase = `fecha=gte.${desde}T00:00:00&fecha=lt.${hasta}T23:59:59`;
+
+                // Fetch all in parallel
+                const [compras, ventas, gastos] = await Promise.all([
+                    apiGet('compras', queryBase + '&select=id,fecha,total,proveedor_id,clientes_proveedores(nombre)&order=fecha.asc'),
+                    apiGet('ventas', queryBase + '&select=id,fecha,total,cliente_id,clientes_proveedores(nombre)&order=fecha.asc'),
+                    apiGet('gastos_adicionales', queryBase + '&select=id,fecha,descripcion,categoria,cantidad,monto&order=fecha.asc')
+                ]);
+
+                // Build unified movements array
+                let movs = [];
+
+                compras.forEach(c => {
+                    movs.push({
+                        tipo: 'Salida',
+                        tipoBadge: 'badge-salida',
+                        fecha: c.fecha,
+                        descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
+                        monto: -parseFloat(c.total),
+                        montoShow: '- ' + formatMoney(c.total)
+                    });
+                });
+
+                ventas.forEach(v => {
+                    movs.push({
+                        tipo: 'Entrada',
+                        tipoBadge: 'badge-entrada',
+                        fecha: v.fecha,
+                        descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
+                        monto: parseFloat(v.total),
+                        montoShow: '+ ' + formatMoney(v.total)
+                    });
+                });
+
+                gastos.forEach(g => {
+                    const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
+                    movs.push({
+                        tipo: 'Salida',
+                        tipoBadge: 'badge-gasto',
+                        fecha: g.fecha,
+                        descripcion: 'Gasto: ' + (g.descripcion || '—') + ' (' + (g.categoria || 'Varios') + ')',
+                        monto: -total,
+                        montoShow: '- ' + formatMoney(total)
+                    });
+                });
+
+                // Sort by date ascending, then by id
+                movs.sort((a, b) => new Date(a.fecha) - new Date(b.fecha) || (a.monto < 0 ? 1 : -1));
+
+                // Filter by tipo
+                if (tipo === 'entrada') movs = movs.filter(m => m.monto > 0);
+                if (tipo === 'salida') movs = movs.filter(m => m.monto < 0);
+
+                movimientosData = movs;
+
+                // Stats
+                const totalIngresos = movs.filter(m => m.monto > 0).reduce((s, m) => s + m.monto, 0);
+                const totalEgresos = Math.abs(movs.filter(m => m.monto < 0).reduce((s, m) => s + m.monto, 0));
+                const saldo = totalIngresos - totalEgresos;
+                const cantIngresos = movs.filter(m => m.monto > 0).length;
+                const cantEgresos = movs.filter(m => m.monto < 0).length;
+
+                document.getElementById('statIngresos').textContent = formatMoney(totalIngresos);
+                document.getElementById('statIngresosCant').textContent = cantIngresos + ' operaciones';
+                document.getElementById('statEgresos').textContent = formatMoney(totalEgresos);
+                document.getElementById('statEgresosCant').textContent = cantEgresos + ' operaciones';
+                const saldoEl = document.getElementById('statSaldo');
+                saldoEl.textContent = formatMoney(saldo);
+                saldoEl.className = 'stat-value ' + (saldo >= 0 ? 'text-green' : 'text-red');
+
+                // Table
+                if (movs.length === 0) {
+                    tbody.innerHTML = ''; empty.style.display = 'block'; return;
+                }
+                empty.style.display = 'none';
+
+                let runningBalance = 0;
+                tbody.innerHTML = movs.map(m => {
+                    runningBalance += m.monto;
+                    return `
+                    <tr>
+                        <td><span class="badge ${m.tipoBadge}">${m.tipo}</span></td>
+                        <td>${formatDateTime(m.fecha)}</td>
+                        <td>${escHtml(m.descripcion)}</td>
+                        <td class="text-right ${m.monto >= 0 ? 'text-green' : 'text-red'}">${m.montoShow}</td>
+                        <td class="text-right" style="font-weight:600;">${formatMoney(runningBalance)}</td>
+                    </tr>
+                `}).join('');
+            } catch (e) {
+                console.error('Error cargando caja:', e);
+                showToast('Error al cargar datos', 'error');
+            }
+        }
+
+        function exportarCSV() {
+            if (movimientosData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+            let csv = 'Tipo,Fecha,Descripción,Monto,Saldo Acum.\n';
+            let running = 0;
+            movimientosData.forEach(m => {
+                running += m.monto;
+                csv += `"${m.tipo}","${formatDateTime(m.fecha)}","${m.descripcion}",${formatNum(m.monto,2)},${formatNum(running,2)}\n`;
+            });
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'caja.csv'; a.click();
+            URL.revokeObjectURL(url);
+            showToast('Exportado como CSV', 'success');
+        }
+
+        function imprimirPDF() {
+            if (movimientosData.length === 0) { showToast('No hay datos para imprimir', 'error'); return; }
+            const desde = document.getElementById('filtDesde').value || '—';
+            const hasta = document.getElementById('filtHasta').value || '—';
+
+            const totalIngresos = movimientosData.filter(m => m.monto > 0).reduce((s, m) => s + m.monto, 0);
+            const totalEgresos = Math.abs(movimientosData.filter(m => m.monto < 0).reduce((s, m) => s + m.monto, 0));
+
+            let rows = '';
+            let running = 0;
+            movimientosData.forEach(m => {
+                running += m.monto;
+                rows += `<tr>
+                    <td>${m.tipo}</td>
+                    <td>${formatDateTime(m.fecha)}</td>
+                    <td>${escHtml(m.descripcion)}</td>
+                    <td style="text-align:right;color:${m.monto>=0?'#059669':'#dc2626'};font-weight:600;">${m.montoShow}</td>
+                    <td style="text-align:right;font-weight:600;">${formatMoney(running)}</td>
+                </tr>`;
+            });
+
+            const printDiv = document.createElement('div');
+            printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
+            printDiv.innerHTML = `
+                <h1 style="margin-bottom:4px;">Caja</h1>
+                <p style="margin-bottom:4px;color:#64748b;">Período: ${desde} al ${hasta}</p>
+                <div style="display:flex;gap:24px;margin-bottom:16px;">
+                    <div><span style="font-size:0.8rem;color:#64748b;">INGRESOS:</span> <strong style="color:#059669;">${formatMoney(totalIngresos)}</strong></div>
+                    <div><span style="font-size:0.8rem;color:#64748b;">EGRESOS:</span> <strong style="color:#dc2626;">${formatMoney(totalEgresos)}</strong></div>
+                    <div><span style="font-size:0.8rem;color:#64748b;">SALDO:</span> <strong style="color:${totalIngresos-totalEgresos>=0?'#059669':'#dc2626'};">${formatMoney(totalIngresos - totalEgresos)}</strong></div>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead><tr style="background:#f8fafc;">
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Tipo</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Fecha</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Descripción</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Monto</th>
+                        <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Saldo Acum.</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+            document.body.appendChild(printDiv);
+            window.print();
+            document.body.removeChild(printDiv);
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast'); if (existing) existing.remove();
+            const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+            document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
