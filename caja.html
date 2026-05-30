@@ -155,7 +155,7 @@
             <div class="card-header">
                 <span>Movimientos de Caja</span>
                 <div>
-                    <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-excel"></i> Excel</button>
                     <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
                 </div>
             </div>
@@ -186,19 +186,19 @@
 
             switch (currentPeriod) {
                 case 'dia':
-                    desde = hoy.toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(hoy);
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'semana':
                     const diaSem = hoy.getDay();
                     const lunes = new Date(hoy);
                     lunes.setDate(hoy.getDate() - (diaSem === 0 ? 6 : diaSem - 1));
-                    desde = lunes.toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(lunes);
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'mes':
-                    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'custom':
                     desde = document.getElementById('filtDesde').value;
@@ -206,7 +206,7 @@
                     if (hasta) {
                         const h = new Date(hasta + 'T00:00:00');
                         h.setDate(h.getDate() + 1);
-                        hasta = h.toISOString().split('T')[0];
+                        hasta = toLocalDateStr(h);
                     }
                     break;
             }
@@ -216,8 +216,8 @@
         (async () => {
             if (!(await ensureAuth())) return;
 
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('filtDesde').value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            const hoy = todayStr();
+            document.getElementById('filtDesde').value = toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
             document.getElementById('filtHasta').value = hoy;
 
             // Period buttons
@@ -397,18 +397,13 @@
 
         function exportarCSV() {
             if (movimientosData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'Tipo,Fecha,Descripción,Monto,Saldo Acum.\n';
+            const headers = ['Tipo', 'Fecha', 'Descripción', 'Monto', 'Saldo Acum.'];
             let running = 0;
-            movimientosData.forEach(m => {
+            const rows = movimientosData.map(m => {
                 running += m.monto;
-                csv += `"${m.tipo}","${formatDateTime(m.fecha)}","${m.descripcion}",${formatNum(m.monto,2)},${formatNum(running,2)}\n`;
+                return [m.tipo, formatDateTime(m.fecha), m.descripcion, formatNum(m.monto, 2), formatNum(running, 2)];
             });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'caja.csv'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado como CSV', 'success');
+            exportarExcel({ headers, rows, filename: 'caja' });
         }
 
         function imprimirPDF() {

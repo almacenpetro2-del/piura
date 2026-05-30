@@ -107,7 +107,7 @@
                 <div class="card-header">
                     <h3>Stock Actual por Material</h3>
                     <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('stock')"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('stock')"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-secondary" onclick="imprimir('stock')"><i class="fas fa-print"></i> PDF</button>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
                 <div class="card-header">
                     <h3>Compras y Ventas por Período</h3>
                     <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('movimientos')"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('movimientos')"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-secondary" onclick="imprimir('movimientos')"><i class="fas fa-print"></i> PDF</button>
                     </div>
                 </div>
@@ -154,14 +154,14 @@
                     </div>
                     <div class="filter-group">
                         <label>Buscar</label>
-                        <input type="text" id="movBuscar" placeholder="ID, persona..." style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
+                        <input type="text" id="movBuscar" placeholder="ID, producto..." style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;">
                     </div>
                     <button class="btn btn-sm btn-primary" onclick="loadMovimientos()"><i class="fas fa-filter"></i> Generar</button>
                 </div>
                 <div class="table-wrap">
                     <table id="tableMovimientos">
                         <thead><tr>
-                            <th>ID</th><th>Tipo</th><th>Fecha</th><th>Persona</th><th class="text-right">Subtotal</th><th class="text-right">IVA</th><th class="text-right">Total</th>
+                            <th>ID</th><th>Tipo</th><th>Fecha</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">P. Compra</th><th class="text-right">P. Venta</th><th class="text-right">Subtotal</th><th class="text-right">Ganancia</th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -218,7 +218,7 @@
 
         (async () => {
             if (!(await ensureAuth())) return;
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = todayStr();
             const mesInicio = hoy.substring(0, 7) + '-01';
             document.getElementById('movDesde').value = mesInicio;
             document.getElementById('movHasta').value = hoy;
@@ -284,34 +284,92 @@
                     compras = await apiGet('compras', queryBase + '&select=id,fecha,subtotal,iva,total,proveedor_id,clientes_proveedores(nombre)');
                 }
                 if (tipo === 'todos' || tipo === 'venta') {
-                    ventas = await apiGet('ventas', queryBase + '&select=id,fecha,subtotal,iva,total,cliente_id,clientes_proveedores(nombre)');
+                    ventas = await apiGet('ventas', queryBase + '&select=id,fecha,subtotal,iva,total,ganancia,cliente_id,clientes_proveedores(nombre)');
                 }
 
-                let todos = [
-                    ...compras.map(c => ({ ...c, _tipo: 'Compra', _persona: c.clientes_proveedores?.nombre })),
-                    ...ventas.map(v => ({ ...v, _tipo: 'Venta', _persona: v.clientes_proveedores?.nombre }))
-                ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                let filas = [];
 
-                // Buscador
-                if (buscar) {
-                    todos = todos.filter(m => {
-                        return m.id.toString().includes(buscar) ||
-                            (m._persona || '').toLowerCase().includes(buscar) ||
-                            m._tipo.toLowerCase().includes(buscar);
+                if (compras.length > 0) {
+                    const compraIds = compras.map(c => c.id);
+                    const detCompras = await apiGet('detalle_compras',
+                        `compra_id=in.(${compraIds.join(',')})&select=*,tipos_chatarra(nombre)`);
+                    const detPorCompra = {};
+                    detCompras.forEach(d => {
+                        if (!detPorCompra[d.compra_id]) detPorCompra[d.compra_id] = [];
+                        detPorCompra[d.compra_id].push(d);
+                    });
+                    compras.forEach(c => {
+                        const detalles = detPorCompra[c.id] || [];
+                        detalles.forEach(d => {
+                            filas.push({
+                                _id: c.id,
+                                _tipo: 'Compra',
+                                _fecha: c.fecha,
+                                _producto: d.tipos_chatarra?.nombre || '—',
+                                _cantidad: parseFloat(d.cantidad || 0),
+                                _pcompra: parseFloat(d.precio_unitario || 0),
+                                _pventa: null,
+                                _subtotal: parseFloat(d.subtotal || 0),
+                                _ganancia: null
+                            });
+                        });
                     });
                 }
 
-                if (todos.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+                if (ventas.length > 0) {
+                    const ventaIds = ventas.map(v => v.id);
+                    const detVentas = await apiGet('detalle_ventas',
+                        `venta_id=in.(${ventaIds.join(',')})&select=*,tipos_chatarra(nombre)`);
+                    const detPorVenta = {};
+                    detVentas.forEach(d => {
+                        if (!detPorVenta[d.venta_id]) detPorVenta[d.venta_id] = [];
+                        detPorVenta[d.venta_id].push(d);
+                    });
+                    ventas.forEach(v => {
+                        const detalles = detPorVenta[v.id] || [];
+                        detalles.forEach(d => {
+                            const precioVenta = parseFloat(d.precio_unitario || 0);
+                            const costo = parseFloat(d.costo_unitario || 0);
+                            const cantidad = parseFloat(d.cantidad || 0);
+                            filas.push({
+                                _id: v.id,
+                                _tipo: 'Venta',
+                                _fecha: v.fecha,
+                                _producto: d.tipos_chatarra?.nombre || '—',
+                                _cantidad: cantidad,
+                                _pcompra: costo,
+                                _pventa: precioVenta,
+                                _subtotal: parseFloat(d.subtotal || 0),
+                                _ganancia: (precioVenta - costo) * cantidad
+                            });
+                        });
+                    });
+                }
+
+                filas.sort((a, b) => new Date(b._fecha) - new Date(a._fecha) || a._id - b._id);
+
+                if (buscar) {
+                    const b = buscar.toLowerCase();
+                    filas = filas.filter(f =>
+                        f._id.toString().includes(b) ||
+                        f._producto.toLowerCase().includes(b) ||
+                        f._tipo.toLowerCase().includes(b)
+                    );
+                }
+
+                if (filas.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
-                tbody.innerHTML = todos.map(m => `
+                tbody.innerHTML = filas.map(f => `
                     <tr>
-                        <td>#${m.id}</td>
-                        <td>${m._tipo}</td>
-                        <td>${formatDateTime(m.fecha)}</td>
-                        <td>${escHtml(m._persona || '—')}</td>
-                        <td class="text-right">${formatMoney(m.subtotal)}</td>
-                        <td class="text-right">${formatMoney(m.iva)}</td>
-                        <td class="text-right"><strong>${formatMoney(m.total)}</strong></td>
+                        <td>#${f._id}</td>
+                        <td>${f._tipo}</td>
+                        <td>${formatDateTime(f._fecha)}</td>
+                        <td><strong>${escHtml(f._producto)}</strong></td>
+                        <td class="text-right">${formatNum(f._cantidad, 2)}</td>
+                        <td class="text-right">${f._pcompra != null ? formatMoney(f._pcompra) : '—'}</td>
+                        <td class="text-right">${f._pventa != null ? formatMoney(f._pventa) : '—'}</td>
+                        <td class="text-right">${formatMoney(f._subtotal)}</td>
+                        <td class="text-right" style="color:${(f._ganancia||0)>=0?'var(--primary)':'var(--danger)'};font-weight:600;">${f._ganancia != null ? formatMoney(f._ganancia) : '—'}</td>
                     </tr>
                 `).join('');
             } catch (e) { console.error(e); showToast('Error al cargar movimientos', 'error'); }
@@ -384,29 +442,13 @@
             } catch (e) { console.error(e); showToast('Error al cargar deudas', 'error'); }
         }
 
-        // ===== EXPORT CSV =====
+        // ===== EXPORT EXCEL =====
         function exportarCSV(tipo) {
-            let tableId, filename;
-            if (tipo === 'stock') { tableId = 'tableStock'; filename = 'stock.csv'; }
-            else { tableId = 'tableMovimientos'; filename = 'movimientos.csv'; }
-
-            const table = document.getElementById(tableId);
-            if (!table) return;
-            let csv = '';
-            table.querySelectorAll('tr').forEach(row => {
-                const cols = [];
-                row.querySelectorAll('th, td').forEach(cell => {
-                    cols.push('"' + (cell.textContent || '').replace(/"/g, '""').trim() + '"');
-                });
-                csv += cols.join(',') + '\n';
-            });
-
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado como CSV', 'success');
+            if (tipo === 'stock') {
+                exportarExcel({ tableId: 'tableStock', filename: 'stock' });
+            } else {
+                exportarExcel({ tableId: 'tableMovimientos', filename: 'movimientos' });
+            }
         }
 
         function imprimir(tipo) {

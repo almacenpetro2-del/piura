@@ -206,19 +206,19 @@
 
             switch (currentPeriod) {
                 case 'dia':
-                    desde = hoy.toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(hoy);
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'semana':
                     const diaSem = hoy.getDay();
                     const lunes = new Date(hoy);
                     lunes.setDate(hoy.getDate() - (diaSem === 0 ? 6 : diaSem - 1));
-                    desde = lunes.toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(lunes);
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'mes':
-                    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
-                    hasta = new Date(hoy.getTime() + 86400000).toISOString().split('T')[0];
+                    desde = toLocalDateStr(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+                    hasta = toLocalDateStr(new Date(hoy.getTime() + 86400000));
                     break;
                 case 'custom':
                     desde = document.getElementById('filtDesde').value;
@@ -226,7 +226,7 @@
                     if (hasta) {
                         const h = new Date(hasta + 'T00:00:00');
                         h.setDate(h.getDate() + 1);
-                        hasta = h.toISOString().split('T')[0];
+                        hasta = toLocalDateStr(h);
                     }
                     break;
             }
@@ -246,7 +246,7 @@
         (async () => {
             if (!(await ensureAuth())) return;
 
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = todayStr();
             document.getElementById('filtDesde').value = hoy;
             document.getElementById('filtHasta').value = hoy;
 

@@ -281,7 +281,7 @@
         if (!(await ensureAuth())) return;
         try {
             await loadData();
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = todayStr();
             document.getElementById('transfFecha').value = hoy;
             document.getElementById('filtFechaDesdeT').value = hoy.substring(0,7) + '-01';
             document.getElementById('filtFechaHastaT').value = hoy;
@@ -554,7 +554,7 @@
 
         try {
             const data = await apiPost('transformaciones', {
-                fecha: fecha + 'T12:00:00',
+                fecha: fecha + 'T' + nowTimeStr(),
                 descripcion: descripcion || ''
             });
             const transfId = data[0].id;
@@ -599,7 +599,7 @@
     }
 
     function resetForm() {
-        document.getElementById('transfFecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('transfFecha').value = todayStr();
         document.getElementById('transfDescripcion').value = '';
         document.getElementById('rowsEntrada').innerHTML = '';
         document.getElementById('rowsSalida').innerHTML = '';

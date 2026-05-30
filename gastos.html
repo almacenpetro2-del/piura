@@ -161,7 +161,7 @@
                 <div class="card-header">
                     <h3>Historial de Gastos</h3>
                     <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
                         <button class="btn btn-sm btn-outline" onclick="loadGastos()" style="margin-left:4px;"><i class="fas fa-sync-alt"></i></button>
                     </div>
@@ -207,7 +207,7 @@
 
         (async () => {
             if (!(await ensureAuth())) return;
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = todayStr();
             document.getElementById('gasFecha').value = hoy;
             document.getElementById('filtDesde').value = hoy.substring(0,7) + '-01';
             document.getElementById('filtHasta').value = hoy;
@@ -244,7 +244,7 @@
                     categoria,
                     cantidad,
                     monto,
-                    fecha: fecha + 'T12:00:00'
+                    fecha: fecha + 'T' + nowTimeStr()
                 });
                 resetForm();
                 showToast('Gasto registrado', 'success');
@@ -260,7 +260,7 @@
             document.getElementById('gasCategoria').value = '';
             document.getElementById('gasCantidad').value = '1';
             document.getElementById('gasMonto').value = '';
-            document.getElementById('gasFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('gasFecha').value = todayStr();
         }
 
         async function loadGastos() {
@@ -340,17 +340,12 @@
 
         function exportarCSV() {
             if (gastosData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'Fecha,Descripción,Categoría,Cantidad,P. Unit.,Total\n';
-            gastosData.forEach(g => {
+            const headers = ['Fecha', 'Descripción', 'Categoría', 'Cantidad', 'P. Unit.', 'Total'];
+            const rows = gastosData.map(g => {
                 const total = parseFloat(g.cantidad || 1) * parseFloat(g.monto || 0);
-                csv += `"${formatDateTime(g.fecha)}","${g.descripcion}","${g.categoria || 'Varios'}",${formatNum(g.cantidad,2)},${formatNum(g.monto,2)},${formatNum(total,2)}\n`;
+                return [formatDateTime(g.fecha), g.descripcion, g.categoria || 'Varios', formatNum(g.cantidad, 2), formatNum(g.monto, 2), formatNum(total, 2)];
             });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'gastos.csv'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado como CSV', 'success');
+            exportarExcel({ headers, rows, filename: 'gastos' });
         }
 
         function imprimirPDF() {

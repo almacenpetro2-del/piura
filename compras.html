@@ -238,7 +238,7 @@
                 <div class="card-header">
                     <h3>Historial de Compras</h3>
                     <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
                         <button class="btn btn-sm btn-outline" onclick="loadCompras()" style="margin-left:4px;"><i class="fas fa-sync-alt"></i></button>
                     </div>
@@ -365,7 +365,7 @@
         (async () => {
             if (!(await ensureAuth())) return;
             await loadSelects();
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = todayStr();
             document.getElementById('compFecha').value = hoy;
             document.getElementById('filtFechaDesde').value = hoy.substring(0,7) + '-01';
             document.getElementById('filtFechaHasta').value = hoy;
@@ -516,7 +516,7 @@
                 // 1. Create compra
                 const compraData = await apiPost('compras', {
                     proveedor_id: parseInt(proveedorId),
-                    fecha: fecha + 'T12:00:00',
+                    fecha: fecha + 'T' + nowTimeStr(),
                     subtotal, iva, total
                 });
                 const compraId = compraData[0].id;
@@ -530,7 +530,7 @@
                         tipo: 'compra',
                         referencia_id: compraId,
                         monto: montoPagado,
-                        fecha: fecha + 'T12:00:00',
+                        fecha: fecha + 'T' + nowTimeStr(),
                         forma_pago: formaPago
                     });
                 }
@@ -566,7 +566,7 @@
 
         function resetForm() {
             document.getElementById('compProveedor').value = '';
-            document.getElementById('compFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('compFecha').value = todayStr();
             document.getElementById('compIvaPorc').value = '21';
             document.getElementById('detailRows').innerHTML = '';
             document.getElementById('compPagado').value = '';
@@ -675,7 +675,7 @@
             if (!compra) { showToast('Compra no encontrada', 'error'); return; }
             document.getElementById('pagosCompraId').textContent = compraId;
             document.getElementById('pagosCompraTotal').textContent = formatMoney(compra.total);
-            document.getElementById('nuevoPagoFechaC').value = new Date().toISOString().split('T')[0];
+            document.getElementById('nuevoPagoFechaC').value = todayStr();
             await loadPagosCompra(compra);
             document.getElementById('modalPagosC').classList.add('open');
         }
@@ -711,7 +711,7 @@
                     tipo: 'compra',
                     referencia_id: pagosCompraActualId,
                     monto: monto,
-                    fecha: fecha + 'T12:00:00',
+                    fecha: fecha + 'T' + nowTimeStr(),
                     forma_pago: forma
                 });
 
@@ -740,17 +740,12 @@
 
         function exportarCSV() {
             if (comprasData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'ID,Fecha,Proveedor,Subtotal,IVA,Total,Estado\n';
-            comprasData.forEach(c => {
+            const headers = ['ID', 'Fecha', 'Proveedor', 'Subtotal', 'IVA', 'Total', 'Estado'];
+            const rows = comprasData.map(c => {
                 const estado = (c.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (c.estado === 'parcial' ? 'Parcial' : 'Pendiente');
-                csv += `#${c.id},"${formatDateTime(c.fecha)}","${c.clientes_proveedores?.nombre || '—'}",${formatNum(c.subtotal,2)},${formatNum(c.iva,2)},${formatNum(c.total,2)},${estado}\n`;
+                return ['#' + c.id, formatDateTime(c.fecha), c.clientes_proveedores?.nombre || '—', formatNum(c.subtotal, 2), formatNum(c.iva, 2), formatNum(c.total, 2), estado];
             });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'compras.csv'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado como CSV', 'success');
+            exportarExcel({ headers, rows, filename: 'compras' });
         }
 
         function imprimirPDF() {

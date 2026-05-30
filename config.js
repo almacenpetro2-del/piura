@@ -231,8 +231,8 @@ async function getCostoPromedioQuincenal(tipoChatarraId) {
             desdeDate = new Date(año, mes, 16);
             hastaDate = new Date(año, mes + 1, 1);
         }
-        const desde = desdeDate.toISOString().split('T')[0];
-        const hasta = hastaDate.toISOString().split('T')[0];
+        const desde = [desdeDate.getFullYear(), String(desdeDate.getMonth() + 1).padStart(2, '0'), String(desdeDate.getDate()).padStart(2, '0')].join('-');
+        const hasta = [hastaDate.getFullYear(), String(hastaDate.getMonth() + 1).padStart(2, '0'), String(hastaDate.getDate()).padStart(2, '0')].join('-');
 
         let totalCantidad = 0;
         let totalCosto = 0;
@@ -326,23 +326,50 @@ function formatMoney(n) {
     return 'S/ ' + parseFloat(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function todayStr() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function nowTimeStr() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    const offset = -d.getTimezoneOffset();
+    const sign = offset >= 0 ? '+' : '-';
+    const oh = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+    const om = String(Math.abs(offset) % 60).padStart(2, '0');
+    return `${hh}:${mm}:${ss}${sign}${oh}:${om}`;
+}
+
+function toLocalDateStr(d) {
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+
 function formatDate(iso) {
     if (!iso) return '';
-    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return iso;
-    return `${m[3]}/${m[2]}/${m[1]}`;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
 }
 
 function formatDateTime(iso) {
     if (!iso) return '';
-    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return iso;
-    const datePart = `${m[3]}/${m[2]}/${m[1]}`;
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
     const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${datePart} ${hh}:${mm}`;
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 }
 
 // ===== TOAST / NOTIFICACIÓN =====
@@ -512,3 +539,38 @@ window.addEventListener('popstate', (e) => {
         navigateTo(e.state.page, false);
     }
 });
+
+// ===== EXPORTAR A EXCEL =====
+
+let _xlsxReady = false;
+function cargarXLSX() {
+    if (_xlsxReady) return Promise.resolve();
+    if (window.XLSX) { _xlsxReady = true; return Promise.resolve(); }
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+        script.onload = () => { _xlsxReady = true; resolve(); };
+        script.onerror = () => reject(new Error('No se pudo cargar la librería Excel'));
+        document.head.appendChild(script);
+    });
+}
+
+async function exportarExcel({ headers, rows, filename, tableId }) {
+    try {
+        await cargarXLSX();
+        const wb = XLSX.utils.book_new();
+        let ws;
+        if (tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) { showToast('Tabla no encontrada', 'error'); return; }
+            ws = XLSX.utils.table_to_sheet(table);
+        } else {
+            ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        }
+        XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+        XLSX.writeFile(wb, (filename || 'export') + '.xlsx');
+    } catch (e) {
+        console.error(e);
+        showToast('Error al exportar: ' + e.message, 'error');
+    }
+}

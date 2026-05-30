@@ -229,7 +229,7 @@
                 <div class="card-header">
                     <h3>Historial de Ventas</h3>
                     <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV()"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-secondary" onclick="imprimirPDF()"><i class="fas fa-print"></i> PDF</button>
                         <button class="btn btn-sm btn-outline" onclick="loadVentas()" style="margin-left:4px;"><i class="fas fa-sync-alt"></i></button>
                     </div>
@@ -356,7 +356,7 @@
             if (!(await ensureAuth())) return;
             try {
                 await loadSelectsVenta();
-                const hoy = new Date().toISOString().split('T')[0];
+                const hoy = todayStr();
                 document.getElementById('ventFecha').value = hoy;
                 document.getElementById('filtFechaDesdeV').value = hoy.substring(0,7) + '-01';
                 document.getElementById('filtFechaHastaV').value = hoy;
@@ -592,7 +592,7 @@
             try {
                 const ventaData = await apiPost('ventas', {
                     cliente_id: parseInt(clienteId),
-                    fecha: fecha + 'T12:00:00',
+                    fecha: fecha + 'T' + nowTimeStr(),
                     subtotal, iva, total, ganancia
                 });
                 const ventaId = ventaData[0].id;
@@ -606,7 +606,7 @@
                         tipo: 'venta',
                         referencia_id: ventaId,
                         monto: montoPagado,
-                        fecha: fecha + 'T12:00:00',
+                        fecha: fecha + 'T' + nowTimeStr(),
                         forma_pago: formaPago
                     });
                 }
@@ -643,7 +643,7 @@
 
         function resetFormVenta() {
             document.getElementById('ventCliente').value = '';
-            document.getElementById('ventFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('ventFecha').value = todayStr();
             document.getElementById('ventIvaPorc').value = '21';
             document.getElementById('ventPagado').value = '';
             document.getElementById('ventFormaPago').value = 'efectivo';
@@ -761,7 +761,7 @@
             if (!venta) { showToast('Venta no encontrada', 'error'); return; }
             document.getElementById('pagosVentaId').textContent = ventaId;
             document.getElementById('pagosVentaTotal').textContent = formatMoney(venta.total);
-            document.getElementById('nuevoPagoFechaV').value = new Date().toISOString().split('T')[0];
+            document.getElementById('nuevoPagoFechaV').value = todayStr();
             await loadPagosVenta(venta);
             document.getElementById('modalPagosV').classList.add('open');
         }
@@ -797,7 +797,7 @@
                     tipo: 'venta',
                     referencia_id: pagosVentaActualId,
                     monto: monto,
-                    fecha: fecha + 'T12:00:00',
+                    fecha: fecha + 'T' + nowTimeStr(),
                     forma_pago: forma
                 });
 
@@ -818,17 +818,12 @@
 
         function exportarCSV() {
             if (ventasData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'ID,Fecha,Cliente,Subtotal,IVA,Total,Ganancia,Estado\n';
-            ventasData.forEach(v => {
+            const headers = ['ID', 'Fecha', 'Cliente', 'Subtotal', 'IVA', 'Total', 'Ganancia', 'Estado'];
+            const rows = ventasData.map(v => {
                 const estadoText = (v.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (v.estado === 'parcial' ? 'Parcial' : 'Pendiente');
-                csv += `#${v.id},"${formatDateTime(v.fecha)}","${v.clientes_proveedores?.nombre || '—'}",${formatNum(v.subtotal,2)},${formatNum(v.iva,2)},${formatNum(v.total,2)},${formatNum(v.ganancia,2)},${estadoText}\n`;
+                return ['#' + v.id, formatDateTime(v.fecha), v.clientes_proveedores?.nombre || '—', formatNum(v.subtotal, 2), formatNum(v.iva, 2), formatNum(v.total, 2), formatNum(v.ganancia, 2), estadoText];
             });
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'ventas.csv'; a.click();
-            URL.revokeObjectURL(url);
-            showToast('Exportado como CSV', 'success');
+            exportarExcel({ headers, rows, filename: 'ventas' });
         }
 
         function imprimirPDF() {

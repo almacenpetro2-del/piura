@@ -439,7 +439,7 @@
 
             const backup = {
                 version: 1,
-                fecha: new Date().toISOString(),
+                fecha: todayStr() + 'T' + nowTimeStr(),
                 empresa: 'Khloe Global',
                 datos: {
                     perfiles, tipos_chatarra: tipos, clientes_proveedores: clientes,
@@ -453,7 +453,7 @@
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const fechaStr = new Date().toISOString().split('T')[0];
+            const fechaStr = todayStr();
             a.href = url; a.download = `respaldo_${fechaStr}.json`; a.click();
             URL.revokeObjectURL(url);
             showToast('Respaldo descargado exitosamente', 'success');
