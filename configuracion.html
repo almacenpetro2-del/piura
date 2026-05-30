@@ -253,7 +253,7 @@
     let backupFileData = null;
 
     (async () => {
-        if (!(await checkAuth(true))) return;
+        if (!(await ensureAuth())) return;
         await loadUserInfo();
         await loadConfig();
         if (isAdmin) {

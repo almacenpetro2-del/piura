@@ -188,11 +188,11 @@
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">Costo Total Entrada</div>
-                        <div class="summary-value" id="sumCostoEntrada">$ 0,00</div>
+                        <div class="summary-value" id="sumCostoEntrada">S/ 0.00</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">Costo por kg (salida)</div>
-                        <div class="summary-value" id="sumCostoUnitario">$ 0,00</div>
+                        <div class="summary-value" id="sumCostoUnitario">S/ 0.00</div>
                     </div>
                 </div>
 
@@ -278,7 +278,7 @@
     let rowSalidaCounter = 0;
 
     (async () => {
-        if (!(await checkAuth(true))) return;
+        if (!(await ensureAuth())) return;
         try {
             await loadData();
             const hoy = new Date().toISOString().split('T')[0];
@@ -364,7 +364,7 @@
             <td class="td-stock-e" style="text-align:center;">—</td>
             <td><input type="number" class="inp-cantidad-e" value="" step="0.01" min="0.01" placeholder="0" oninput="recalcTransformacion()"></td>
             <td><input type="number" class="inp-costo-e" value="" step="0.01" min="0" placeholder="Auto" oninput="recalcTransformacion()"></td>
-            <td class="td-subtotal-e" style="text-align:right;font-weight:600;">$ 0,00</td>
+            <td class="td-subtotal-e" style="text-align:right;font-weight:600;">S/ 0.00</td>
             <td><button class="btn btn-sm btn-danger" onclick="removeRowEntrada(${idx})"><i class="fas fa-trash"></i></button></td>
         `;
         document.getElementById('rowsEntrada').appendChild(row);
@@ -425,7 +425,7 @@
             </td>
             <td><input type="number" class="inp-cantidad-s" value="" step="0.01" min="0.01" placeholder="0" oninput="recalcTransformacion()"></td>
             <td><input type="number" class="inp-costo-s" value="" step="0.01" min="0" readonly placeholder="Calc. automático" style="background:#f8fafc;"></td>
-            <td class="td-subtotal-s" style="text-align:right;font-weight:600;">$ 0,00</td>
+            <td class="td-subtotal-s" style="text-align:right;font-weight:600;">S/ 0.00</td>
             <td><button class="btn btn-sm btn-danger" onclick="removeRowSalida(${idx})"><i class="fas fa-trash"></i></button></td>
         `;
         document.getElementById('rowsSalida').appendChild(row);

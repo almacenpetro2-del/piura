@@ -31,13 +31,16 @@ async function checkAuth(redirect = true) {
     const token = getAccessToken();
     if (!token) { if (redirect) window.location.href = 'login.html'; return false; }
     try {
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        const res = await authFetch(`${SUPABASE_URL}/auth/v1/user`, {
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) {
+        if (res.ok) return true;
+
+        // Solo 401/403 = token realmente inválido → intentar refresh
+        if (res.status === 401 || res.status === 403) {
             const session = getSession();
             if (session && session.refresh_token) {
-                const rf = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+                const rf = await authFetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
                     method: 'POST',
                     headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refresh_token: session.refresh_token })
@@ -48,8 +51,15 @@ async function checkAuth(redirect = true) {
             if (redirect) window.location.href = 'login.html';
             return false;
         }
+
+        // Error del servidor (5xx) → usar token en caché
+        console.warn('Error del servidor validando sesión (' + res.status + '), usando caché');
         return true;
-    } catch (e) { if (redirect) window.location.href = 'login.html'; return false; }
+    } catch (e) {
+        // Error de red → no redirigir, usar token en caché
+        console.warn('Error de red validando sesión, usando caché:', e.message);
+        return true;
+    }
 }
 
 let _authChecked = false;
@@ -73,11 +83,22 @@ async function logout() {
 
 // ===== FUNCIONES API (Fetch a Supabase PostgREST) =====
 
+async function authFetch(url, options = {}) {
+    for (let i = 0; i < 2; i++) {
+        try {
+            return await fetch(url, options);
+        } catch (e) {
+            if (i === 0) { await new Promise(r => setTimeout(r, 1000)); continue; }
+            throw e;
+        }
+    }
+}
+
 async function apiGet(table, queryStr = '') {
     const token = getAccessToken();
     let url = `${SUPABASE_URL}/rest/v1/${table}`;
     if (queryStr) url += `?${queryStr}`;
-    const res = await fetch(url, {
+    const res = await authFetch(url, {
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) {
@@ -92,7 +113,7 @@ async function apiGetSingle(table, queryStr = '') {
     let url = `${SUPABASE_URL}/rest/v1/${table}`;
     if (queryStr) url += `?${queryStr}`;
     url += (queryStr ? '&' : '?') + 'limit=1';
-    const res = await fetch(url, {
+    const res = await authFetch(url, {
         headers: {
             'apikey': SUPABASE_KEY,
             'Authorization': `Bearer ${token}`,
@@ -109,7 +130,7 @@ async function apiGetSingle(table, queryStr = '') {
 
 async function apiPost(table, data) {
     const token = getAccessToken();
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    const res = await authFetch(`${SUPABASE_URL}/rest/v1/${table}`, {
         method: 'POST',
         headers: {
             'apikey': SUPABASE_KEY,
@@ -129,7 +150,7 @@ async function apiPost(table, data) {
 
 async function apiPatch(table, id, data) {
     const token = getAccessToken();
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    const res = await authFetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
         method: 'PATCH',
         headers: {
             'apikey': SUPABASE_KEY,
@@ -146,7 +167,7 @@ async function apiPatch(table, id, data) {
 
 async function apiDelete(table, id) {
     const token = getAccessToken();
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    const res = await authFetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
         method: 'DELETE',
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
     });
@@ -155,7 +176,7 @@ async function apiDelete(table, id) {
 
 async function apiRpc(fnName, body = {}) {
     const token = getAccessToken();
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    const res = await authFetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
         method: 'POST',
         headers: {
             'apikey': SUPABASE_KEY,
@@ -293,7 +314,7 @@ function formatNum(n, decimals = 2) {
 }
 
 function formatMoney(n) {
-    return '$ ' + parseFloat(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return 'S/ ' + parseFloat(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(iso) {

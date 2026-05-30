@@ -278,7 +278,7 @@
 
         // ===== INIT =====
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
             await Promise.all([loadChatarra(), loadClientes()]);
         })();
 

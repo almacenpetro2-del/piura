@@ -119,6 +119,14 @@
         .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
+        .badge-estado { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:600; }
+        .badge-pendiente { background:#fef3c7; color:#92400e; }
+        .badge-parcial { background:#dbeafe; color:#1e40af; }
+        .badge-cancelado { background:#d1fae5; color:#065f46; }
+        .pagos-minitable { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:12px; }
+        .pagos-minitable th { background:#f8fafc; padding:6px 8px; text-align:left; font-weight:600; color:var(--text-light); border-bottom:1px solid var(--border); }
+        .pagos-minitable td { padding:6px 8px; border-bottom:1px solid var(--border); }
+
         @media (max-width: 768px) {
             .form-grid { grid-template-columns: 1fr; }
             .totals { flex-direction: column; gap: 8px; }
@@ -127,6 +135,10 @@
         @media (max-width: 600px) {
             .main { padding: 16px; }
             .tabs { flex-direction: column; }
+        }
+        @media print {
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block !important; position: static !important; padding: 20px !important; }
         }
     </style>
 </head>
@@ -157,6 +169,25 @@
                         <input type="number" id="compIvaPorc" value="21" step="1" min="0" max="100">
                     </div>
                 </div>
+                <div class="form-grid" style="margin-top:4px;">
+                    <div class="form-group">
+                        <label>Pagado ahora (S/)</label>
+                        <input type="number" id="compPagado" value="" step="0.01" min="0" placeholder="0.00" oninput="updateSaldoCompra()">
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de pago</label>
+                        <select id="compFormaPago">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="plin">Plin</option>
+                            <option value="yape">Yape</option>
+                            <option value="transferencia">Transferencia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo pendiente</label>
+                        <input type="text" id="compSaldoPendiente" value="S/ 0.00" readonly>
+                    </div>
+                </div>
 
                 <!-- detalle rows -->
                 <h4 style="font-size:0.95rem; margin: 16px 0 8px; display: flex; align-items: center; justify-content: space-between;">
@@ -176,15 +207,19 @@
                 <div class="totals">
                     <div class="total-item">
                         <div class="total-label">Subtotal</div>
-                        <div class="total-value" id="txtSubtotal">$ 0,00</div>
+                        <div class="total-value" id="txtSubtotal">S/ 0.00</div>
                     </div>
                     <div class="total-item">
                         <div class="total-label">IVA</div>
-                        <div class="total-value" id="txtIva">$ 0,00</div>
+                        <div class="total-value" id="txtIva">S/ 0.00</div>
                     </div>
                     <div class="total-item">
                         <div class="total-label">TOTAL</div>
-                        <div class="total-value total-highlight" id="txtTotal">$ 0,00</div>
+                        <div class="total-value total-highlight" id="txtTotal">S/ 0.00</div>
+                    </div>
+                    <div class="total-item">
+                        <div class="total-label">Pagado</div>
+                        <div class="total-value" id="txtPagado">S/ 0.00</div>
                     </div>
                 </div>
 
@@ -238,7 +273,7 @@
                 <div class="table-wrap">
                     <table class="data-table" id="tableCompras">
                         <thead><tr>
-                            <th>ID</th><th>Fecha</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th><th>Total</th><th></th>
+                            <th>ID</th><th>Fecha</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th><th></th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -268,6 +303,52 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL PAGOS COMPRA -->
+    <div class="modal-overlay" id="modalPagosC">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Pagos — Compra #<span id="pagosCompraId"></span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:8px;font-size:0.85rem;">
+                    Total: <strong id="pagosCompraTotal"></strong> &nbsp;|&nbsp;
+                    Pagado: <strong id="pagosCompraPagado" style="color:var(--primary);"></strong> &nbsp;|&nbsp;
+                    Saldo: <strong id="pagosCompraSaldo" style="color:var(--danger);"></strong>
+                </p>
+                <table class="pagos-minitable">
+                    <thead><tr><th>Fecha</th><th>Monto</th><th>Forma</th><th>Notas</th></tr></thead>
+                    <tbody id="pagosCompraBody"></tbody>
+                </table>
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:0.9rem;margin-bottom:8px;">Registrar nuevo pago</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Monto (S/)</label>
+                            <input type="number" id="nuevoPagoMontoC" step="0.01" min="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Forma de pago</label>
+                            <select id="nuevoPagoFormaC">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="plin">Plin</option>
+                                <option value="yape">Yape</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="nuevoPagoFechaC">
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="registrarPagoC()" style="margin-top:8px;">
+                        <i class="fas fa-save"></i> Registrar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <script src="config.js"></script>
@@ -278,10 +359,11 @@
         let materiales = [];
         let rowCounter = 0;
         let comprasData = [];
+        let pagosCompraActualId = null;
 
         // ===== INIT =====
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
             await loadSelects();
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('compFecha').value = hoy;
@@ -356,7 +438,7 @@
                 </td>
                 <td><input type="number" class="inp-cantidad" value="" step="0.01" min="0.01" placeholder="0" oninput="recalcAll()"></td>
                 <td><input type="number" class="inp-precio" value="" step="0.01" min="0" placeholder="0.00" oninput="recalcAll()"></td>
-                <td class="td-subtotal" style="text-align:right;font-weight:600;">$ 0,00</td>
+                <td class="td-subtotal" style="text-align:right;font-weight:600;">S/ 0.00</td>
                 <td><button class="btn btn-sm btn-danger" onclick="removeRow(${idx})"><i class="fas fa-trash"></i></button></td>
             `;
             document.getElementById('detailRows').appendChild(row);
@@ -370,6 +452,15 @@
 
         function onMaterialChange(sel) {
             recalcAll();
+        }
+
+        function updateSaldoCompra() {
+            const totalText = document.getElementById('txtTotal').textContent.replace('S/ ', '').replace(/,/g, '');
+            const total = parseFloat(totalText) || 0;
+            const pagado = parseFloat(document.getElementById('compPagado').value) || 0;
+            document.getElementById('txtPagado').textContent = formatMoney(pagado);
+            const saldo = total - pagado;
+            document.getElementById('compSaldoPendiente').value = formatMoney(saldo >= 0 ? saldo : 0);
         }
 
         // ===== RECALC =====
@@ -389,6 +480,7 @@
             document.getElementById('txtSubtotal').textContent = formatMoney(subtotal);
             document.getElementById('txtIva').textContent = formatMoney(iva);
             document.getElementById('txtTotal').textContent = formatMoney(total);
+            updateSaldoCompra();
         }
         document.getElementById('compIvaPorc').addEventListener('input', recalcAll);
 
@@ -429,6 +521,22 @@
                 });
                 const compraId = compraData[0].id;
 
+                const montoPagado = parseFloat(document.getElementById('compPagado').value) || 0;
+                const formaPago = document.getElementById('compFormaPago').value;
+                const estado = montoPagado >= total ? 'cancelado' : (montoPagado > 0 ? 'parcial' : 'pendiente');
+
+                if (montoPagado > 0) {
+                    await apiPost('pagos', {
+                        tipo: 'compra',
+                        referencia_id: compraId,
+                        monto: montoPagado,
+                        fecha: fecha + 'T12:00:00',
+                        forma_pago: formaPago
+                    });
+                }
+
+                await apiPatch('compras', compraId, { monto_pagado: montoPagado, estado: estado });
+
                 // 2. Create detalle and update stock
                 for (const row of rows) {
                     await apiPost('detalle_compras', {
@@ -461,6 +569,10 @@
             document.getElementById('compFecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('compIvaPorc').value = '21';
             document.getElementById('detailRows').innerHTML = '';
+            document.getElementById('compPagado').value = '';
+            document.getElementById('compFormaPago').value = 'efectivo';
+            document.getElementById('txtPagado').textContent = 'S/ 0.00';
+            document.getElementById('compSaldoPendiente').value = 'S/ 0.00';
             addRow();
             recalcAll();
         }
@@ -511,7 +623,11 @@
                         <td>${formatMoney(c.subtotal)}</td>
                         <td>${formatMoney(c.iva)}</td>
                         <td><strong>${formatMoney(c.total)}</strong></td>
-                        <td><button class="btn btn-sm btn-outline" onclick="verDetalle(${c.id})"><i class="fas fa-eye"></i></button></td>
+                        <td><span class="badge-estado badge-${c.estado || 'pendiente'}">${(c.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (c.estado === 'parcial' ? 'Parcial' : 'Pendiente')}</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn btn-sm btn-outline" onclick="verDetalle(${c.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-sm btn-outline" onclick="openPagosModalC(${c.id})" title="Pagos"><i class="fas fa-money-bill"></i></button>
+                        </td>
                     </tr>
                 `).join('');
             } catch (e) { console.error(e); showToast('Error al cargar compras', 'error'); }
@@ -541,6 +657,68 @@
             } catch (e) { showToast('Error al cargar detalle', 'error'); }
         }
 
+        // ===== PAGOS MODAL =====
+        async function openPagosModalC(compraId) {
+            pagosCompraActualId = compraId;
+            const compra = comprasData.find(c => c.id === compraId);
+            if (!compra) { showToast('Compra no encontrada', 'error'); return; }
+            document.getElementById('pagosCompraId').textContent = compraId;
+            document.getElementById('pagosCompraTotal').textContent = formatMoney(compra.total);
+            document.getElementById('nuevoPagoFechaC').value = new Date().toISOString().split('T')[0];
+            await loadPagosCompra(compra);
+            document.getElementById('modalPagosC').classList.add('open');
+        }
+
+        async function loadPagosCompra(compra) {
+            try {
+                const pagos = await apiGet('pagos', `tipo=eq.compra&referencia_id=eq.${compra.id}&order=fecha.desc`);
+                const totalPagado = pagos.reduce((s, p) => s + parseFloat(p.monto), 0);
+                const saldo = parseFloat(compra.total) - totalPagado;
+                document.getElementById('pagosCompraPagado').textContent = formatMoney(totalPagado);
+                document.getElementById('pagosCompraSaldo').textContent = formatMoney(saldo > 0 ? saldo : 0);
+                document.getElementById('nuevoPagoMontoC').placeholder = formatMoney(saldo > 0 ? saldo : 0).replace('S/ ', '');
+                document.getElementById('pagosCompraBody').innerHTML = pagos.length === 0
+                    ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:16px;">Sin pagos registrados</td></tr>'
+                    : pagos.map(p => `<tr>
+                        <td>${formatDateTime(p.fecha)}</td>
+                        <td style="font-weight:600;color:var(--danger);">${formatMoney(p.monto)}</td>
+                        <td>${p.forma_pago || '—'}</td>
+                        <td style="color:var(--text-light);">${escHtml(p.notas || '—')}</td>
+                    </tr>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function registrarPagoC() {
+            const monto = parseFloat(document.getElementById('nuevoPagoMontoC').value) || 0;
+            if (monto <= 0) { showToast('Ingresá un monto', 'error'); return; }
+            if (!pagosCompraActualId) return;
+            const forma = document.getElementById('nuevoPagoFormaC').value;
+            const fecha = document.getElementById('nuevoPagoFechaC').value;
+
+            try {
+                await apiPost('pagos', {
+                    tipo: 'compra',
+                    referencia_id: pagosCompraActualId,
+                    monto: monto,
+                    fecha: fecha + 'T12:00:00',
+                    forma_pago: forma
+                });
+
+                const compra = comprasData.find(c => c.id === pagosCompraActualId);
+                if (compra) {
+                    const pagos = await apiGet('pagos', `tipo=eq.compra&referencia_id=eq.${pagosCompraActualId}&select=monto`);
+                    const totalPagado = pagos.reduce((s, p) => s + parseFloat(p.monto), 0);
+                    const estado = totalPagado >= parseFloat(compra.total) ? 'cancelado' : 'parcial';
+                    await apiPatch('compras', pagosCompraActualId, { monto_pagado: totalPagado, estado: estado });
+                }
+
+                document.getElementById('nuevoPagoMontoC').value = '';
+                showToast('Pago registrado', 'success');
+                await loadPagosCompra(compra);
+                if (document.getElementById('section-listado').classList.contains('active')) loadCompras();
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+
         function closeModal() {
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
         }
@@ -551,9 +729,10 @@
 
         function exportarCSV() {
             if (comprasData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'ID,Fecha,Proveedor,Subtotal,IVA,Total\n';
+            let csv = 'ID,Fecha,Proveedor,Subtotal,IVA,Total,Estado\n';
             comprasData.forEach(c => {
-                csv += `#${c.id},"${formatDateTime(c.fecha)}","${c.clientes_proveedores?.nombre || '—'}",${formatNum(c.subtotal,2)},${formatNum(c.iva,2)},${formatNum(c.total,2)}\n`;
+                const estado = (c.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (c.estado === 'parcial' ? 'Parcial' : 'Pendiente');
+                csv += `#${c.id},"${formatDateTime(c.fecha)}","${c.clientes_proveedores?.nombre || '—'}",${formatNum(c.subtotal,2)},${formatNum(c.iva,2)},${formatNum(c.total,2)},${estado}\n`;
             });
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -571,6 +750,7 @@
             let grandTotal = 0;
             comprasData.forEach(c => {
                 grandTotal += parseFloat(c.total);
+                const estado = (c.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (c.estado === 'parcial' ? 'Parcial' : 'Pendiente');
                 rows += `<tr>
                     <td>#${c.id}</td>
                     <td>${formatDateTime(c.fecha)}</td>
@@ -578,9 +758,11 @@
                     <td style="text-align:right;">${formatMoney(c.subtotal)}</td>
                     <td style="text-align:right;">${formatMoney(c.iva)}</td>
                     <td style="text-align:right;font-weight:600;">${formatMoney(c.total)}</td>
+                    <td>${estado}</td>
                 </tr>`;
             });
             const printDiv = document.createElement('div');
+            printDiv.id = 'printArea';
             printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
             printDiv.innerHTML = `
                 <h1 style="margin-bottom:4px;">Compras</h1>
@@ -593,17 +775,20 @@
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Subtotal</th>
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">IVA</th>
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Total</th>
+                        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;">Estado</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                     <tfoot><tr style="border-top:2px solid #e2e8f0;font-weight:700;">
-                        <td colspan="5" style="padding:10px;text-align:right;">TOTAL GENERAL</td>
+                        <td colspan="6" style="padding:10px;text-align:right;">TOTAL GENERAL</td>
                         <td style="padding:10px;text-align:right;font-size:1.1rem;color:#059669;">${formatMoney(grandTotal)}</td>
                     </tr></tfoot>
                 </table>
             `;
             document.body.appendChild(printDiv);
+            window.addEventListener('afterprint', () => {
+                if (printDiv.parentNode) document.body.removeChild(printDiv);
+            }, { once: true });
             window.print();
-            document.body.removeChild(printDiv);
         }
 
         function showToast(msg, type) {

@@ -41,6 +41,8 @@ CREATE TABLE public.compras (
   subtotal NUMERIC(12,2) NOT NULL DEFAULT 0,
   iva NUMERIC(12,2) NOT NULL DEFAULT 0,
   total NUMERIC(12,2) NOT NULL DEFAULT 0,
+  monto_pagado NUMERIC(12,2) DEFAULT 0,
+  estado TEXT DEFAULT 'pendiente' CHECK (estado IN ('pendiente','parcial','cancelado')),
   user_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -62,6 +64,8 @@ CREATE TABLE public.ventas (
   iva NUMERIC(12,2) NOT NULL DEFAULT 0,
   total NUMERIC(12,2) NOT NULL DEFAULT 0,
   ganancia NUMERIC(12,2) DEFAULT 0,
+  monto_pagado NUMERIC(12,2) DEFAULT 0,
+  estado TEXT DEFAULT 'pendiente' CHECK (estado IN ('pendiente','parcial','cancelado')),
   user_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -140,6 +144,18 @@ CREATE TABLE public.detalle_transformacion_salida (
   subtotal NUMERIC(12,2) NOT NULL DEFAULT 0
 );
 
+CREATE TABLE public.pagos (
+  id BIGSERIAL PRIMARY KEY,
+  tipo TEXT NOT NULL CHECK (tipo IN ('venta','compra')),
+  referencia_id BIGINT NOT NULL,
+  monto NUMERIC(12,2) NOT NULL,
+  fecha TIMESTAMPTZ DEFAULT NOW(),
+  forma_pago TEXT DEFAULT 'efectivo' CHECK (forma_pago IN ('efectivo','plin','yape','transferencia')),
+  notas TEXT DEFAULT '',
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 
 -- ============================================================
 -- 2. HABILITAR ROW LEVEL SECURITY
@@ -159,6 +175,7 @@ ALTER TABLE public.gastos_adicionales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transformaciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.detalle_transformacion_entrada ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.detalle_transformacion_salida ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
 
 
 -- ============================================================
@@ -179,6 +196,7 @@ CREATE POLICY "gastos_auth" ON public.gastos_adicionales FOR ALL TO authenticate
 CREATE POLICY "transformaciones_auth" ON public.transformaciones FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "detalle_t_entrada_auth" ON public.detalle_transformacion_entrada FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "detalle_t_salida_auth" ON public.detalle_transformacion_salida FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "pagos_auth" ON public.pagos FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 
 -- ============================================================
@@ -243,3 +261,5 @@ CREATE INDEX IF NOT EXISTS idx_det_transf_salida ON public.detalle_transformacio
 CREATE INDEX IF NOT EXISTS idx_det_transf_salida_tipo ON public.detalle_transformacion_salida(tipo_chatarra_id);
 CREATE INDEX IF NOT EXISTS idx_detalle_compras_tipo ON public.detalle_compras(tipo_chatarra_id);
 CREATE INDEX IF NOT EXISTS idx_detalle_ventas_tipo ON public.detalle_ventas(tipo_chatarra_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_referencia ON public.pagos(tipo, referencia_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON public.pagos(fecha DESC);

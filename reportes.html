@@ -71,6 +71,11 @@
         .empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
         .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
 
+        .badge-estado { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:600; }
+        .badge-pendiente { background:#fef3c7; color:#92400e; }
+        .badge-parcial { background:#dbeafe; color:#1e40af; }
+        .badge-cancelado { background:#d1fae5; color:#065f46; }
+
         .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 0.9rem; z-index: 9999; animation: slideUp 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
         .toast-success { background: var(--primary); } .toast-error { background: var(--danger); }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -80,6 +85,10 @@
             .tabs { flex-direction: column; }
             .filters { flex-direction: column; }
         }
+        @media print {
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block !important; position: static !important; padding: 20px !important; }
+        }
     </style>
 </head>
 <body>
@@ -87,48 +96,13 @@
         <h1 class="page-title">Reportes</h1>
 
         <div class="tabs">
-            <button class="tab active" data-section="ganancias">Ganancias</button>
-            <button class="tab" data-section="stock">Stock Actual</button>
+            <button class="tab active" data-section="stock">Stock Actual</button>
             <button class="tab" data-section="movimientos">Compras / Ventas</button>
-        </div>
-
-        <!-- ===== REPORTE DE GANANCIAS ===== -->
-        <div class="section-content active" id="section-ganancias">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Ganancias Brutas por Material</h3>
-                    <div>
-                        <button class="btn btn-sm btn-secondary" onclick="exportarCSV('ganancias')"><i class="fas fa-file-csv"></i> CSV</button>
-                        <button class="btn btn-sm btn-secondary" onclick="imprimir('ganancias')"><i class="fas fa-print"></i> PDF</button>
-                    </div>
-                </div>
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Desde</label>
-                        <input type="date" id="ganDesde">
-                    </div>
-                    <div class="filter-group">
-                        <label>Hasta</label>
-                        <input type="date" id="ganHasta">
-                    </div>
-                    <button class="btn btn-sm btn-primary" onclick="loadGanancias()"><i class="fas fa-filter"></i> Generar</button>
-                </div>
-                <div class="table-wrap">
-                    <table id="tableGanancias">
-                        <thead><tr>
-                            <th>Material</th><th class="text-right">Cantidad Vendida</th><th class="text-right">Costo Promedio</th><th class="text-right">Precio Venta Prom.</th><th class="text-right">Ganancia Total</th><th class="text-right">Margen %</th>
-                        </tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <div id="ganEmpty" class="empty-state" style="display:none;">
-                    <i class="fas fa-chart-bar"></i><p>Seleccioná un período y hacé clic en Generar</p>
-                </div>
-            </div>
+            <button class="tab" data-section="deudas">Cuentas por Cobrar/Pagar</button>
         </div>
 
         <!-- ===== REPORTE DE STOCK ===== -->
-        <div class="section-content" id="section-stock">
+        <div class="section-content active" id="section-stock">
             <div class="card">
                 <div class="card-header">
                     <h3>Stock Actual por Material</h3>
@@ -197,6 +171,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== REPORTE DE DEUDAS ===== -->
+        <div class="section-content" id="section-deudas">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Cuentas por Cobrar — Clientes</h3>
+                </div>
+                <div class="table-wrap" style="margin-bottom:24px;">
+                    <table id="tableDeudasClientes">
+                        <thead><tr>
+                            <th>Cliente</th><th class="text-right">Total Vendido</th><th class="text-right">Total Pagado</th><th class="text-right">Saldo Pendiente</th><th class="text-right">Estado</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="deudasCliEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-check-circle"></i><p>Todas las cuentas están al día</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Cuentas por Pagar — Proveedores</h3>
+                </div>
+                <div class="table-wrap">
+                    <table id="tableDeudasProveedores">
+                        <thead><tr>
+                            <th>Proveedor</th><th class="text-right">Total Comprado</th><th class="text-right">Total Pagado</th><th class="text-right">Saldo Pendiente</th><th class="text-right">Estado</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="deudasProvEmpty" class="empty-state" style="display:none;">
+                    <i class="fas fa-check-circle"></i><p>Todas las cuentas están al día</p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="config.js"></script>
@@ -206,11 +217,9 @@
         let stockData = [];
 
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
             const hoy = new Date().toISOString().split('T')[0];
             const mesInicio = hoy.substring(0, 7) + '-01';
-            document.getElementById('ganDesde').value = mesInicio;
-            document.getElementById('ganHasta').value = hoy;
             document.getElementById('movDesde').value = mesInicio;
             document.getElementById('movHasta').value = hoy;
             loadStock();
@@ -223,58 +232,9 @@
                 tab.classList.add('active');
                 document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
                 document.getElementById('section-' + tab.dataset.section).classList.add('active');
+                if (tab.dataset.section === 'deudas') loadDeudas();
             });
         });
-
-        // ===== GANANCIAS =====
-        async function loadGanancias() {
-            const desde = document.getElementById('ganDesde').value;
-            const hasta = document.getElementById('ganHasta').value;
-            const tbody = document.querySelector('#tableGanancias tbody');
-            const empty = document.getElementById('ganEmpty');
-            if (!desde || !hasta) { showToast('Seleccioná el período', 'error'); return; }
-
-            try {
-                const detalle = await apiGet('detalle_ventas', `select=tipo_chatarra_id,cantidad,precio_unitario,costo_unitario,subtotal,tipos_chatarra(nombre,unidad_medida)&ventas(fecha)=gte.${desde}T00:00:00&ventas(fecha)=lt.${hasta}T23:59:59`);
-
-                if (detalle.length === 0) {
-                    tbody.innerHTML = ''; empty.style.display = 'block'; return;
-                }
-                empty.style.display = 'none';
-
-                const agrupado = {};
-                detalle.forEach(d => {
-                    const key = d.tipo_chatarra_id;
-                    if (!agrupado[key]) {
-                        agrupado[key] = {
-                            nombre: d.tipos_chatarra?.nombre || 'ID ' + key,
-                            unidad: d.tipos_chatarra?.unidad_medida || '',
-                            cantidad: 0, costoTotal: 0, ventaTotal: 0, subtotal: 0
-                        };
-                    }
-                    const g = agrupado[key];
-                    g.cantidad += parseFloat(d.cantidad);
-                    g.costoTotal += parseFloat(d.costo_unitario) * parseFloat(d.cantidad);
-                    g.ventaTotal += parseFloat(d.precio_unitario) * parseFloat(d.cantidad);
-                    g.subtotal += parseFloat(d.subtotal);
-                });
-
-                tbody.innerHTML = Object.values(agrupado).map(g => {
-                    const costoProm = g.cantidad > 0 ? g.costoTotal / g.cantidad : 0;
-                    const ventaProm = g.cantidad > 0 ? g.ventaTotal / g.cantidad : 0;
-                    const ganancia = g.ventaTotal - g.costoTotal;
-                    const margen = g.ventaTotal > 0 ? (ganancia / g.ventaTotal * 100) : 0;
-                    return `<tr>
-                        <td><strong>${escHtml(g.nombre)}</strong></td>
-                        <td class="text-right">${formatNum(g.cantidad, 2)} ${g.unidad}</td>
-                        <td class="text-right">${formatMoney(costoProm)}</td>
-                        <td class="text-right">${formatMoney(ventaProm)}</td>
-                        <td class="text-right ${ganancia>=0?'text-positive':'text-negative'}">${formatMoney(ganancia)}</td>
-                        <td class="text-right ${margen>=0?'text-positive':'text-negative'}">${formatNum(margen, 1)}%</td>
-                    </tr>`;
-                }).join('');
-            } catch (e) { console.error(e); showToast('Error al cargar ganancias', 'error'); }
-        }
 
         // ===== STOCK =====
         async function loadStock() {
@@ -357,11 +317,77 @@
             } catch (e) { console.error(e); showToast('Error al cargar movimientos', 'error'); }
         }
 
+        // ===== DEUDAS =====
+        async function loadDeudas() {
+            try {
+                // Cuentas por cobrar (clientes)
+                const ventasAll = await apiGet('ventas', 'select=id,total,monto_pagado,estado,cliente_id,clientes_proveedores(nombre)&order=fecha.desc&limit=500');
+                const clientesMap = {};
+                ventasAll.forEach(v => {
+                    const key = v.cliente_id;
+                    const nombre = v.clientes_proveedores?.nombre || 'Cliente #' + key;
+                    if (!clientesMap[key]) {
+                        clientesMap[key] = { nombre, totalVendido: 0, totalPagado: 0 };
+                    }
+                    clientesMap[key].totalVendido += parseFloat(v.total);
+                    clientesMap[key].totalPagado += parseFloat(v.monto_pagado || 0);
+                });
+
+                const tbodyCli = document.querySelector('#tableDeudasClientes tbody');
+                const emptyCli = document.getElementById('deudasCliEmpty');
+                const clientesArr = Object.values(clientesMap).filter(c => c.totalVendido > 0);
+                if (clientesArr.length === 0) { tbodyCli.innerHTML = ''; emptyCli.style.display = 'block'; } else {
+                    emptyCli.style.display = 'none';
+                    tbodyCli.innerHTML = clientesArr.map(c => {
+                        const saldo = c.totalVendido - c.totalPagado;
+                        const estado = saldo <= 0 ? 'cancelado' : (c.totalPagado > 0 ? 'parcial' : 'pendiente');
+                        return `<tr>
+                            <td><strong>${escHtml(c.nombre)}</strong></td>
+                            <td class="text-right">${formatMoney(c.totalVendido)}</td>
+                            <td class="text-right" style="color:var(--primary);">${formatMoney(c.totalPagado)}</td>
+                            <td class="text-right" style="color:${saldo>0?'var(--danger)':'var(--primary)'};font-weight:600;">${formatMoney(saldo)}</td>
+                            <td class="text-right"><span class="badge-estado badge-${estado}">${estado==='cancelado'?'Al día':(estado==='parcial'?'Parcial':'Pendiente')}</span></td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // Cuentas por pagar (proveedores)
+                const comprasAll = await apiGet('compras', 'select=id,total,monto_pagado,estado,proveedor_id,clientes_proveedores(nombre)&order=fecha.desc&limit=500');
+                const proveedoresMap = {};
+                comprasAll.forEach(c => {
+                    const key = c.proveedor_id;
+                    const nombre = c.clientes_proveedores?.nombre || 'Proveedor #' + key;
+                    if (!proveedoresMap[key]) {
+                        proveedoresMap[key] = { nombre, totalComprado: 0, totalPagado: 0 };
+                    }
+                    proveedoresMap[key].totalComprado += parseFloat(c.total);
+                    proveedoresMap[key].totalPagado += parseFloat(c.monto_pagado || 0);
+                });
+
+                const tbodyProv = document.querySelector('#tableDeudasProveedores tbody');
+                const emptyProv = document.getElementById('deudasProvEmpty');
+                const provArr = Object.values(proveedoresMap).filter(p => p.totalComprado > 0);
+                if (provArr.length === 0) { tbodyProv.innerHTML = ''; emptyProv.style.display = 'block'; } else {
+                    emptyProv.style.display = 'none';
+                    tbodyProv.innerHTML = provArr.map(p => {
+                        const saldo = p.totalComprado - p.totalPagado;
+                        const estado = saldo <= 0 ? 'cancelado' : (p.totalPagado > 0 ? 'parcial' : 'pendiente');
+                        return `<tr>
+                            <td><strong>${escHtml(p.nombre)}</strong></td>
+                            <td class="text-right">${formatMoney(p.totalComprado)}</td>
+                            <td class="text-right" style="color:var(--primary);">${formatMoney(p.totalPagado)}</td>
+                            <td class="text-right" style="color:${saldo>0?'var(--danger)':'var(--primary)'};font-weight:600;">${formatMoney(saldo)}</td>
+                            <td class="text-right"><span class="badge-estado badge-${estado}">${estado==='cancelado'?'Al día':(estado==='parcial'?'Parcial':'Pendiente')}</span></td>
+                        </tr>`;
+                    }).join('');
+                }
+            } catch (e) { console.error(e); showToast('Error al cargar deudas', 'error'); }
+        }
+
         // ===== EXPORT CSV =====
         function exportarCSV(tipo) {
             let tableId, filename;
-            if (tipo === 'ganancias') { tableId = 'tableGanancias'; filename = 'ganancias.csv'; }
-            else if (tipo === 'stock') { tableId = 'tableStock'; filename = 'stock.csv'; }
+            if (tipo === 'stock') { tableId = 'tableStock'; filename = 'stock.csv'; }
             else { tableId = 'tableMovimientos'; filename = 'movimientos.csv'; }
 
             const table = document.getElementById(tableId);
@@ -384,16 +410,18 @@
         }
 
         function imprimir(tipo) {
-            const sectionId = tipo === 'ganancias' ? 'section-ganancias'
-                : tipo === 'stock' ? 'section-stock' : 'section-movimientos';
+            const sectionId = tipo === 'stock' ? 'section-stock' : 'section-movimientos';
             const content = document.getElementById(sectionId).querySelector('.card').cloneNode(true);
             const printDiv = document.createElement('div');
+            printDiv.id = 'printArea';
             printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
             printDiv.innerHTML = `<h1 style="margin-bottom:16px;">Reporte</h1>${content.innerHTML}`;
             printDiv.querySelectorAll('.btn').forEach(b => b.style.display = 'none');
             document.body.appendChild(printDiv);
+            window.addEventListener('afterprint', () => {
+                if (printDiv.parentNode) document.body.removeChild(printDiv);
+            }, { once: true });
             window.print();
-            document.body.removeChild(printDiv);
         }
 
         function showToast(msg, type) {

@@ -117,6 +117,18 @@
             .main { padding: 16px; }
             .tabs { flex-direction: column; }
         }
+        @media print {
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block !important; position: static !important; padding: 20px !important; }
+        }
+
+        .badge-estado { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:600; }
+        .badge-pendiente { background:#fef3c7; color:#92400e; }
+        .badge-parcial { background:#dbeafe; color:#1e40af; }
+        .badge-cancelado { background:#d1fae5; color:#065f46; }
+        .pagos-minitable { width:100%; border-collapse:collapse; font-size:0.8rem; margin-top:12px; }
+        .pagos-minitable th { background:#f8fafc; padding:6px 8px; text-align:left; font-weight:600; color:var(--text-light); border-bottom:1px solid var(--border); }
+        .pagos-minitable td { padding:6px 8px; border-bottom:1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -146,6 +158,25 @@
                         <input type="number" id="ventIvaPorc" value="21" step="1" min="0" max="100">
                     </div>
                 </div>
+                <div class="form-grid" style="margin-top:4px;">
+                    <div class="form-group">
+                        <label>Pagado ahora (S/)</label>
+                        <input type="number" id="ventPagado" value="" step="0.01" min="0" placeholder="0.00" oninput="updateSaldoVenta()">
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de pago</label>
+                        <select id="ventFormaPago">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="plin">Plin</option>
+                            <option value="yape">Yape</option>
+                            <option value="transferencia">Transferencia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo pendiente</label>
+                        <input type="text" id="ventSaldoPendiente" value="S/ 0.00" readonly>
+                    </div>
+                </div>
 
                 <h4 style="font-size:0.95rem; margin: 16px 0 8px; display: flex; align-items: center; justify-content: space-between;">
                     Detalle de la venta
@@ -163,19 +194,23 @@
                 <div class="totals">
                     <div class="total-item">
                         <div class="total-label">Subtotal</div>
-                        <div class="total-value" id="txtSubtotalV">$ 0,00</div>
+                        <div class="total-value" id="txtSubtotalV">S/ 0.00</div>
                     </div>
                     <div class="total-item">
                         <div class="total-label">IVA</div>
-                        <div class="total-value" id="txtIvaV">$ 0,00</div>
+                        <div class="total-value" id="txtIvaV">S/ 0.00</div>
                     </div>
                     <div class="total-item">
                         <div class="total-label">TOTAL</div>
-                        <div class="total-value total-highlight" id="txtTotalV">$ 0,00</div>
+                        <div class="total-value total-highlight" id="txtTotalV">S/ 0.00</div>
                     </div>
                     <div class="total-item">
                         <div class="total-label">Ganancia Est.</div>
-                        <div class="total-value" id="txtGananciaV" style="font-size:1.1rem;">$ 0,00</div>
+                        <div class="total-value" id="txtGananciaV" style="font-size:1.1rem;">S/ 0.00</div>
+                    </div>
+                    <div class="total-item">
+                        <div class="total-label">Pagado</div>
+                        <div class="total-value" id="txtPagadoV">S/ 0.00</div>
                     </div>
                 </div>
 
@@ -229,7 +264,7 @@
                 <div class="table-wrap">
                     <table class="data-table" id="tableVentas">
                         <thead><tr>
-                            <th>ID</th><th>Fecha</th><th>Cliente</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Ganancia</th><th></th>
+                            <th>ID</th><th>Fecha</th><th>Cliente</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Ganancia</th><th>Estado</th><th></th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -259,6 +294,52 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL PAGOS VENTA -->
+    <div class="modal-overlay" id="modalPagosV">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Pagos — Venta #<span id="pagosVentaId"></span></h3>
+                <button class="modal-close" onclick="closeModalV()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:8px;font-size:0.85rem;">
+                    Total: <strong id="pagosVentaTotal"></strong> &nbsp;|&nbsp;
+                    Pagado: <strong id="pagosVentaPagado" style="color:var(--primary);"></strong> &nbsp;|&nbsp;
+                    Saldo: <strong id="pagosVentaSaldo" style="color:var(--danger);"></strong>
+                </p>
+                <table class="pagos-minitable">
+                    <thead><tr><th>Fecha</th><th>Monto</th><th>Forma</th><th>Notas</th></tr></thead>
+                    <tbody id="pagosVentaBody"></tbody>
+                </table>
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:0.9rem;margin-bottom:8px;">Registrar nuevo pago</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Monto (S/)</label>
+                            <input type="number" id="nuevoPagoMontoV" step="0.01" min="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Forma de pago</label>
+                            <select id="nuevoPagoFormaV">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="plin">Plin</option>
+                                <option value="yape">Yape</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="nuevoPagoFechaV">
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="registrarPagoV()" style="margin-top:8px;">
+                        <i class="fas fa-save"></i> Registrar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <script src="config.js"></script>
@@ -272,7 +353,7 @@
         let ventasData = [];
 
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
             try {
                 await loadSelectsVenta();
                 const hoy = new Date().toISOString().split('T')[0];
@@ -381,7 +462,7 @@
                 <td><input type="number" class="inp-cantidad-v" value="" step="0.01" min="0.01" placeholder="0" oninput="recalcVenta()"></td>
                 <td><input type="number" class="inp-precio-v" value="" step="0.01" min="0" placeholder="0.00" oninput="recalcVenta()"></td>
                 <td><input type="number" class="inp-costo-v" value="" step="0.01" min="0" placeholder="Promedio quincenal" oninput="recalcVenta()" title="Se auto-calcula al seleccionar material"></td>
-                <td class="td-subtotal-v" style="text-align:right;font-weight:600;">$ 0,00</td>
+                <td class="td-subtotal-v" style="text-align:right;font-weight:600;">S/ 0.00</td>
                 <td><button class="btn btn-sm btn-danger" onclick="removeRowV(${idx})"><i class="fas fa-trash"></i></button></td>
             `;
             document.getElementById('detailRowsVenta').appendChild(row);
@@ -414,8 +495,17 @@
                         costoInp.value = costo.toFixed(2);
                         costoInp.title = 'Costo promedio de compras de la quincena';
                     } else {
-                        costoInp.value = '';
-                        costoInp.title = 'Sin compras en esta quincena';
+                        getCostoPromedioTotal(matId).then(costoTotal => {
+                            if (costoTotal !== null && costoTotal > 0) {
+                                costoInp.value = costoTotal.toFixed(2);
+                                costoInp.title = 'Costo promedio historico';
+                            } else {
+                                costoInp.value = '';
+                                costoInp.title = 'Sin costo disponible';
+                            }
+                            recalcVenta();
+                        });
+                        return;
                     }
                     costoInp.placeholder = 'Promedio quincenal';
                     recalcVenta();
@@ -448,8 +538,19 @@
             const gEl = document.getElementById('txtGananciaV');
             gEl.textContent = formatMoney(ganancia);
             gEl.className = 'total-value ' + (ganancia >= 0 ? 'ganancia-positiva' : 'ganancia-negativa');
+            updateSaldoVenta();
         }
         document.getElementById('ventIvaPorc').addEventListener('input', recalcVenta);
+
+        function updateSaldoVenta() {
+            const totalEl = document.getElementById('txtTotalV');
+            const totalText = totalEl.textContent.replace('S/ ', '').replace(/,/g, '');
+            const total = parseFloat(totalText) || 0;
+            const pagado = parseFloat(document.getElementById('ventPagado').value) || 0;
+            document.getElementById('txtPagadoV').textContent = formatMoney(pagado);
+            const saldo = total - pagado;
+            document.getElementById('ventSaldoPendiente').value = formatMoney(saldo >= 0 ? saldo : 0);
+        }
 
         async function saveVenta() {
             const clienteId = document.getElementById('ventCliente').value;
@@ -496,6 +597,22 @@
                 });
                 const ventaId = ventaData[0].id;
 
+                const montoPagado = parseFloat(document.getElementById('ventPagado').value) || 0;
+                const formaPago = document.getElementById('ventFormaPago').value;
+                const estado = montoPagado >= total ? 'cancelado' : (montoPagado > 0 ? 'parcial' : 'pendiente');
+
+                if (montoPagado > 0) {
+                    await apiPost('pagos', {
+                        tipo: 'venta',
+                        referencia_id: ventaId,
+                        monto: montoPagado,
+                        fecha: fecha + 'T12:00:00',
+                        forma_pago: formaPago
+                    });
+                }
+
+                await apiPatch('ventas', ventaId, { monto_pagado: montoPagado, estado: estado });
+
                 for (const row of rows) {
                     await apiPost('detalle_ventas', {
                         venta_id: ventaId,
@@ -528,6 +645,10 @@
             document.getElementById('ventCliente').value = '';
             document.getElementById('ventFecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('ventIvaPorc').value = '21';
+            document.getElementById('ventPagado').value = '';
+            document.getElementById('ventFormaPago').value = 'efectivo';
+            document.getElementById('txtPagadoV').textContent = 'S/ 0.00';
+            document.getElementById('ventSaldoPendiente').value = 'S/ 0.00';
             document.getElementById('detailRowsVenta').innerHTML = '';
             addRowVenta();
             recalcVenta();
@@ -578,7 +699,11 @@
                         <td>${formatMoney(v.iva)}</td>
                         <td><strong>${formatMoney(v.total)}</strong></td>
                         <td style="color:${parseFloat(v.ganancia)>=0?'var(--primary)':'var(--danger)'};font-weight:600;">${formatMoney(v.ganancia)}</td>
-                        <td><button class="btn btn-sm btn-outline" onclick="verDetalleV(${v.id})"><i class="fas fa-eye"></i></button></td>
+                        <td><span class="badge-estado badge-${v.estado || 'pendiente'}">${(v.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (v.estado === 'parcial' ? 'Parcial' : 'Pendiente')}</span></td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn btn-sm btn-outline" onclick="verDetalleV(${v.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-sm btn-outline" onclick="openPagosModalV(${v.id})" title="Pagos"><i class="fas fa-money-bill"></i></button>
+                        </td>
                     </tr>
                 `).join('');
             } catch (e) { console.error(e); showToast('Error al cargar ventas', 'error'); }
@@ -611,19 +736,81 @@
         function closeModalV() {
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
         }
-        function closeModalV() {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
-        }
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModalV(); });
         });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModalV(); });
 
+        // ===== PAGOS =====
+        let pagosVentaActualId = null;
+
+        async function openPagosModalV(ventaId) {
+            pagosVentaActualId = ventaId;
+            const venta = ventasData.find(v => v.id === ventaId);
+            if (!venta) { showToast('Venta no encontrada', 'error'); return; }
+            document.getElementById('pagosVentaId').textContent = ventaId;
+            document.getElementById('pagosVentaTotal').textContent = formatMoney(venta.total);
+            document.getElementById('nuevoPagoFechaV').value = new Date().toISOString().split('T')[0];
+            await loadPagosVenta(venta);
+            document.getElementById('modalPagosV').classList.add('open');
+        }
+
+        async function loadPagosVenta(venta) {
+            try {
+                const pagos = await apiGet('pagos', `tipo=eq.venta&referencia_id=eq.${venta.id}&order=fecha.desc`);
+                const totalPagado = pagos.reduce((s, p) => s + parseFloat(p.monto), 0);
+                const saldo = parseFloat(venta.total) - totalPagado;
+                document.getElementById('pagosVentaPagado').textContent = formatMoney(totalPagado);
+                document.getElementById('pagosVentaSaldo').textContent = formatMoney(saldo > 0 ? saldo : 0);
+                document.getElementById('nuevoPagoMontoV').placeholder = formatMoney(saldo > 0 ? saldo : 0).replace('S/ ', '');
+                document.getElementById('pagosVentaBody').innerHTML = pagos.length === 0
+                    ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:16px;">Sin pagos registrados</td></tr>'
+                    : pagos.map(p => `<tr>
+                        <td>${formatDateTime(p.fecha)}</td>
+                        <td style="font-weight:600;color:var(--primary);">${formatMoney(p.monto)}</td>
+                        <td>${p.forma_pago || '—'}</td>
+                        <td style="color:var(--text-light);">${escHtml(p.notas || '—')}</td>
+                    </tr>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function registrarPagoV() {
+            const monto = parseFloat(document.getElementById('nuevoPagoMontoV').value) || 0;
+            if (monto <= 0) { showToast('Ingresá un monto', 'error'); return; }
+            if (!pagosVentaActualId) return;
+            const forma = document.getElementById('nuevoPagoFormaV').value;
+            const fecha = document.getElementById('nuevoPagoFechaV').value;
+
+            try {
+                await apiPost('pagos', {
+                    tipo: 'venta',
+                    referencia_id: pagosVentaActualId,
+                    monto: monto,
+                    fecha: fecha + 'T12:00:00',
+                    forma_pago: forma
+                });
+
+                const venta = ventasData.find(v => v.id === pagosVentaActualId);
+                if (venta) {
+                    const pagos = await apiGet('pagos', `tipo=eq.venta&referencia_id=eq.${pagosVentaActualId}&select=monto`);
+                    const totalPagado = pagos.reduce((s, p) => s + parseFloat(p.monto), 0);
+                    const estado = totalPagado >= parseFloat(venta.total) ? 'cancelado' : 'parcial';
+                    await apiPatch('ventas', pagosVentaActualId, { monto_pagado: totalPagado, estado: estado });
+                }
+
+                document.getElementById('nuevoPagoMontoV').value = '';
+                showToast('Pago registrado', 'success');
+                await loadPagosVenta(venta);
+                if (document.getElementById('section-listado').classList.contains('active')) loadVentas();
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
+
         function exportarCSV() {
             if (ventasData.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-            let csv = 'ID,Fecha,Cliente,Subtotal,IVA,Total,Ganancia\n';
+            let csv = 'ID,Fecha,Cliente,Subtotal,IVA,Total,Ganancia,Estado\n';
             ventasData.forEach(v => {
-                csv += `#${v.id},"${formatDateTime(v.fecha)}","${v.clientes_proveedores?.nombre || '—'}",${formatNum(v.subtotal,2)},${formatNum(v.iva,2)},${formatNum(v.total,2)},${formatNum(v.ganancia,2)}\n`;
+                const estadoText = (v.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (v.estado === 'parcial' ? 'Parcial' : 'Pendiente');
+                csv += `#${v.id},"${formatDateTime(v.fecha)}","${v.clientes_proveedores?.nombre || '—'}",${formatNum(v.subtotal,2)},${formatNum(v.iva,2)},${formatNum(v.total,2)},${formatNum(v.ganancia,2)},${estadoText}\n`;
             });
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -644,6 +831,7 @@
                 totalIVA += parseFloat(v.iva);
                 totalGeneral += parseFloat(v.total);
                 totalGanancia += parseFloat(v.ganancia || 0);
+                const estadoText = (v.estado || 'pendiente') === 'cancelado' ? 'Cancelado' : (v.estado === 'parcial' ? 'Parcial' : 'Pendiente');
                 rows += `<tr>
                     <td>#${v.id}</td>
                     <td>${formatDateTime(v.fecha)}</td>
@@ -652,9 +840,11 @@
                     <td style="text-align:right;">${formatMoney(v.iva)}</td>
                     <td style="text-align:right;font-weight:600;">${formatMoney(v.total)}</td>
                     <td style="text-align:right;color:${parseFloat(v.ganancia)>=0?'#059669':'#dc2626'};font-weight:600;">${formatMoney(v.ganancia)}</td>
+                    <td style="text-align:center;">${estadoText}</td>
                 </tr>`;
             });
             const printDiv = document.createElement('div');
+            printDiv.id = 'printArea';
             printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
             printDiv.innerHTML = `
                 <h1 style="margin-bottom:4px;">Ventas</h1>
@@ -668,6 +858,7 @@
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">IVA</th>
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Total</th>
                         <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;">Ganancia</th>
+                        <th style="padding:8px 10px;text-align:center;border-bottom:2px solid #e2e8f0;">Estado</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                     <tfoot>
@@ -677,13 +868,16 @@
                             <td style="padding:10px;text-align:right;">${formatMoney(totalIVA)}</td>
                             <td style="padding:10px;text-align:right;font-size:1.1rem;color:#059669;">${formatMoney(totalGeneral)}</td>
                             <td style="padding:10px;text-align:right;font-size:1.1rem;color:${totalGanancia>=0?'#059669':'#dc2626'};">${formatMoney(totalGanancia)}</td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>
             `;
             document.body.appendChild(printDiv);
+            window.addEventListener('afterprint', () => {
+                if (printDiv.parentNode) document.body.removeChild(printDiv);
+            }, { once: true });
             window.print();
-            document.body.removeChild(printDiv);
         }
 
         function showToast(msg, type) {

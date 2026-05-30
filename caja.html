@@ -89,6 +89,10 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) { .filter-bar { flex-direction: column; align-items: stretch; } .date-pickers { margin-left: 0; } .filter-bar-separator { display: none; } }
+        @media print {
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block !important; position: static !important; padding: 20px !important; }
+        }
     </style>
 </head>
 <body>
@@ -210,7 +214,7 @@
         }
 
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
 
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('filtDesde').value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -247,35 +251,61 @@
             try {
                 const queryBase = `fecha=gte.${desde}T00:00:00&fecha=lt.${hasta}T23:59:59`;
 
-                // Fetch all in parallel
-                const [compras, ventas, gastos] = await Promise.all([
-                    apiGet('compras', queryBase + '&select=id,fecha,total,proveedor_id,clientes_proveedores(nombre)&order=fecha.asc'),
-                    apiGet('ventas', queryBase + '&select=id,fecha,total,cliente_id,clientes_proveedores(nombre)&order=fecha.asc'),
-                    apiGet('gastos_adicionales', queryBase + '&select=id,fecha,descripcion,categoria,cantidad,monto&order=fecha.asc')
+                const [compras, ventas, gastos, pagos] = await Promise.all([
+                    apiGet('compras', queryBase + '&select=id,fecha,total,monto_pagado,estado,proveedor_id,clientes_proveedores(nombre)&order=fecha.asc'),
+                    apiGet('ventas', queryBase + '&select=id,fecha,total,monto_pagado,estado,cliente_id,clientes_proveedores(nombre)&order=fecha.asc'),
+                    apiGet('gastos_adicionales', queryBase + '&select=id,fecha,descripcion,categoria,cantidad,monto&order=fecha.asc'),
+                    apiGet('pagos', queryBase + '&select=*&order=fecha.asc')
                 ]);
 
-                // Build unified movements array
                 let movs = [];
 
                 compras.forEach(c => {
-                    movs.push({
-                        tipo: 'Salida',
-                        tipoBadge: 'badge-salida',
-                        fecha: c.fecha,
-                        descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
-                        monto: -parseFloat(c.total),
-                        montoShow: '- ' + formatMoney(c.total)
-                    });
+                    const pagado = parseFloat(c.monto_pagado || 0);
+                    if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'compra' && p.referencia_id === c.id))) {
+                        movs.push({
+                            tipo: 'Salida',
+                            tipoBadge: 'badge-salida',
+                            fecha: c.fecha,
+                            descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
+                            monto: -parseFloat(c.total),
+                            montoShow: '- ' + formatMoney(c.total)
+                        });
+                    }
                 });
 
                 ventas.forEach(v => {
+                    const pagado = parseFloat(v.monto_pagado || 0);
+                    if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'venta' && p.referencia_id === v.id))) {
+                        movs.push({
+                            tipo: 'Entrada',
+                            tipoBadge: 'badge-entrada',
+                            fecha: v.fecha,
+                            descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
+                            monto: parseFloat(v.total),
+                            montoShow: '+ ' + formatMoney(v.total)
+                        });
+                    }
+                });
+
+                pagos.forEach(p => {
+                    const esVenta = p.tipo === 'venta';
+                    let descripcion = '';
+                    if (esVenta) {
+                        const v = ventas.find(v => v.id === p.referencia_id);
+                        descripcion = 'Pago Venta #' + p.referencia_id + ' — ' + (v?.clientes_proveedores?.nombre || 'Cliente');
+                    } else {
+                        const c = compras.find(c => c.id === p.referencia_id);
+                        descripcion = 'Pago Compra #' + p.referencia_id + ' — ' + (c?.clientes_proveedores?.nombre || 'Proveedor');
+                    }
+                    const monto = parseFloat(p.monto);
                     movs.push({
-                        tipo: 'Entrada',
-                        tipoBadge: 'badge-entrada',
-                        fecha: v.fecha,
-                        descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
-                        monto: parseFloat(v.total),
-                        montoShow: '+ ' + formatMoney(v.total)
+                        tipo: esVenta ? 'Entrada' : 'Salida',
+                        tipoBadge: esVenta ? 'badge-entrada' : 'badge-salida',
+                        fecha: p.fecha,
+                        descripcion: descripcion + ' (' + (p.forma_pago || 'efectivo') + ')',
+                        monto: esVenta ? monto : -monto,
+                        montoShow: (esVenta ? '+ ' : '- ') + formatMoney(monto)
                     });
                 });
 
@@ -377,6 +407,7 @@
             });
 
             const printDiv = document.createElement('div');
+            printDiv.id = 'printArea';
             printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
             printDiv.innerHTML = `
                 <h1 style="margin-bottom:4px;">Caja</h1>
@@ -398,8 +429,10 @@
                 </table>
             `;
             document.body.appendChild(printDiv);
+            window.addEventListener('afterprint', () => {
+                if (printDiv.parentNode) document.body.removeChild(printDiv);
+            }, { once: true });
             window.print();
-            document.body.removeChild(printDiv);
         }
 
         function showToast(msg, type) {

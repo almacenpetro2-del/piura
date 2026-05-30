@@ -95,6 +95,10 @@
             .form-grid { grid-template-columns: 1fr 1fr; }
             .totals-bar { flex-direction: column; }
         }
+        @media print {
+            body > *:not(#printArea) { display: none !important; }
+            #printArea { display: block !important; position: static !important; padding: 20px !important; }
+        }
     </style>
 </head>
 <body>
@@ -134,7 +138,7 @@
                         <input type="number" id="gasCantidad" value="1" step="0.01" min="0.01" placeholder="1">
                     </div>
                     <div class="form-group">
-                        <label>Monto Unit. ($) *</label>
+                        <label>Monto Unit. (S/) *</label>
                         <input type="number" id="gasMonto" step="0.01" min="0" placeholder="0.00">
                     </div>
                     <div class="form-group">
@@ -202,7 +206,7 @@
         let gastosData = [];
 
         (async () => {
-            if (!(await checkAuth(true))) return;
+            if (!(await ensureAuth())) return;
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('gasFecha').value = hoy;
             document.getElementById('filtDesde').value = hoy.substring(0,7) + '-01';
@@ -368,6 +372,7 @@
                 </tr>`;
             });
             const printDiv = document.createElement('div');
+            printDiv.id = 'printArea';
             printDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;padding:30px;font-family:system-ui,sans-serif;color:#1e293b;';
             printDiv.innerHTML = `
                 <h1 style="margin-bottom:4px;">Gastos</h1>
@@ -389,8 +394,10 @@
                 </table>
             `;
             document.body.appendChild(printDiv);
+            window.addEventListener('afterprint', () => {
+                if (printDiv.parentNode) document.body.removeChild(printDiv);
+            }, { once: true });
             window.print();
-            document.body.removeChild(printDiv);
         }
 
         function showToast(msg, type) {

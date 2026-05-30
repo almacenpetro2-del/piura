@@ -244,8 +244,7 @@
 
         // ===== INIT =====
         (async () => {
-            const ok = await checkAuth(true);
-            if (!ok) return;
+            if (!(await ensureAuth())) return;
 
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('filtDesde').value = hoy;
