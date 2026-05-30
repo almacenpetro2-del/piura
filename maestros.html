@@ -279,6 +279,10 @@
         // ===== INIT =====
         (async () => {
             if (!(await ensureAuth())) return;
+            if (cannotAccess('maestros')) { window.location.href = 'dashboard.html'; return; }
+            if (!canCreate()) {
+                document.querySelectorAll('.card-header .btn-primary').forEach(b => b.style.display = 'none');
+            }
             await Promise.all([loadChatarra(), loadClientes()]);
         })();
 
@@ -322,8 +326,8 @@
                     <td>${c.unidad_medida}</td>
                     <td>${formatNum(stockMap[c.id] || 0, 0)} ${c.unidad_medida}</td>
                     <td class="actions">
-                        <button class="btn btn-sm btn-outline" onclick="editChatarra(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'chatarra','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        ${canEdit() ? `<button class="btn btn-sm btn-outline" onclick="editChatarra(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
+                        ${canDelete() ? `<button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'chatarra','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `).join('');
@@ -356,8 +360,8 @@
                     <td>${c.direccion || '—'}</td>
                     <td><span style="text-transform:capitalize;">${c.tipo}</span></td>
                     <td class="actions">
-                        <button class="btn btn-sm btn-outline" onclick="editCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'cliente','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        ${canEdit() ? `<button class="btn btn-sm btn-outline" onclick="editCliente(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
+                        ${canDelete() ? `<button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'cliente','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `).join('');

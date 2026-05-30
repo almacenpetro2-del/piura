@@ -215,6 +215,7 @@
 
         (async () => {
             if (!(await ensureAuth())) return;
+            if (cannotAccess('caja')) { window.location.href = 'dashboard.html'; return; }
 
             const hoy = todayStr();
             document.getElementById('filtDesde').value = toLocalDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1));

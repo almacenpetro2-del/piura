@@ -161,7 +161,7 @@
                 <div class="table-wrap">
                     <table id="tableMovimientos">
                         <thead><tr>
-                            <th>ID</th><th>Tipo</th><th>Fecha</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">P. Compra</th><th class="text-right">P. Venta</th><th class="text-right">Subtotal</th><th class="text-right">Ganancia</th>
+                            <th>ID</th><th>Tipo</th><th>Fecha</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">P. Compra</th><th class="text-right">P. Venta</th><th class="text-right">Subtotal</th><th class="text-right">Utilidad</th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -218,6 +218,7 @@
 
         (async () => {
             if (!(await ensureAuth())) return;
+            if (cannotAccess('reportes')) { window.location.href = 'dashboard.html'; return; }
             const hoy = todayStr();
             const mesInicio = hoy.substring(0, 7) + '-01';
             document.getElementById('movDesde').value = mesInicio;

@@ -279,12 +279,18 @@
 
     (async () => {
         if (!(await ensureAuth())) return;
+        if (cannotAccess('transformaciones')) { window.location.href = 'dashboard.html'; return; }
         try {
             await loadData();
             const hoy = todayStr();
             document.getElementById('transfFecha').value = hoy;
             document.getElementById('filtFechaDesdeT').value = hoy.substring(0,7) + '-01';
             document.getElementById('filtFechaHastaT').value = hoy;
+            if (isSupervisor()) {
+                document.querySelector('.tab[data-section="nueva"]').style.display = 'none';
+                document.querySelector('.tab[data-section="listado"]').click();
+                document.getElementById('section-nueva').style.display = 'none';
+            }
             addRowEntrada();
             addRowSalida();
         } catch (e) {

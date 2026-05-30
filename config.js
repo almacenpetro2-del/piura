@@ -63,10 +63,42 @@ async function checkAuth(redirect = true) {
 }
 
 let _authChecked = false;
+let currentUserRole = null;
+
 async function ensureAuth() {
     if (_authChecked) return true;
     _authChecked = await checkAuth(true);
+    if (_authChecked) await loadUserRole();
     return _authChecked;
+}
+
+async function loadUserRole() {
+    try {
+        const token = getAccessToken();
+        if (!token) return;
+        const res = await authFetch(`${SUPABASE_URL}/auth/v1/user`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const user = await res.json();
+        const perfil = await apiGet('perfiles', `id=eq.${user.id}&limit=1`);
+        currentUserRole = perfil.length > 0 ? perfil[0].rol : null;
+    } catch (e) {
+        console.warn('Error cargando rol:', e.message);
+    }
+}
+
+function isAdmin() { return currentUserRole === 'admin'; }
+function isSupervisor() { return currentUserRole === 'supervisor'; }
+function isOperario() { return currentUserRole === 'operario'; }
+function canCreate() { return isAdmin() || isOperario(); }
+function canEdit() { return isAdmin(); }
+function canDelete() { return isAdmin(); }
+function cannotAccess(page) {
+    if (isAdmin()) return false;
+    if (isSupervisor()) return page === 'caja' || page === 'config';
+    if (isOperario()) return !['dashboard', 'compras', 'ventas', 'gastos', 'transformaciones'].includes(page);
+    return true;
 }
 
 async function logout() {
@@ -402,6 +434,24 @@ function createNavbar(currentPage) {
     _navCreated = true;
     _navCurrent = currentPage;
 
+    const allItems = [
+        { page: 'dashboard', href: 'dashboard.html', icon: 'fa-chart-pie', label: 'Dashboard', roles: ['admin','supervisor','operario'] },
+        { page: 'maestros', href: 'maestros.html', icon: 'fa-database', label: 'Maestros', roles: ['admin','supervisor'] },
+        { page: 'compras', href: 'compras.html', icon: 'fa-cart-plus', label: 'Compras', roles: ['admin','supervisor','operario'] },
+        { page: 'ventas', href: 'ventas.html', icon: 'fa-store', label: 'Ventas', roles: ['admin','supervisor','operario'] },
+        { page: 'reportes', href: 'reportes.html', icon: 'fa-file-invoice', label: 'Reportes', roles: ['admin','supervisor'] },
+        { page: 'gastos', href: 'gastos.html', icon: 'fa-wallet', label: 'Gastos', roles: ['admin','supervisor','operario'] },
+        { page: 'transformaciones', href: 'transformaciones.html', icon: 'fa-sync-alt', label: 'Transformaciones', roles: ['admin','supervisor','operario'] },
+        { page: 'caja', href: 'caja.html', icon: 'fa-cash-register', label: 'Caja', roles: ['admin'] },
+        { page: 'configuracion', href: 'configuracion.html', icon: 'fa-cog', label: 'Config', roles: ['admin'] },
+    ];
+
+    const rol = currentUserRole || 'admin';
+    const visibleItems = allItems.filter(item => item.roles.includes(rol));
+    const navLinks = visibleItems.map(item =>
+        `<li><a href="${item.href}" data-page="${item.page}" ${currentPage===item.page?'class="active"':''}><i class="fas ${item.icon}"></i> ${item.label}</a></li>`
+    ).join('');
+
     const navHTML = `
     <nav class="navbar" id="navbar">
       <div class="nav-brand">
@@ -412,15 +462,7 @@ function createNavbar(currentPage) {
         <span></span><span></span><span></span>
       </button>
       <ul class="nav-menu" id="navMenu">
-        <li><a href="dashboard.html" data-page="dashboard" ${currentPage==='dashboard'?'class="active"':''}><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-        <li><a href="maestros.html" data-page="maestros" ${currentPage==='maestros'?'class="active"':''}><i class="fas fa-database"></i> Maestros</a></li>
-        <li><a href="compras.html" data-page="compras" ${currentPage==='compras'?'class="active"':''}><i class="fas fa-cart-plus"></i> Compras</a></li>
-        <li><a href="ventas.html" data-page="ventas" ${currentPage==='ventas'?'class="active"':''}><i class="fas fa-store"></i> Ventas</a></li>
-        <li><a href="reportes.html" data-page="reportes" ${currentPage==='reportes'?'class="active"':''}><i class="fas fa-file-invoice"></i> Reportes</a></li>
-        <li><a href="gastos.html" data-page="gastos" ${currentPage==='gastos'?'class="active"':''}><i class="fas fa-wallet"></i> Gastos</a></li>
-        <li><a href="transformaciones.html" data-page="transformaciones" ${currentPage==='transformaciones'?'class="active"':''}><i class="fas fa-sync-alt"></i> Transformaciones</a></li>
-        <li><a href="caja.html" data-page="caja" ${currentPage==='caja'?'class="active"':''}><i class="fas fa-cash-register"></i> Caja</a></li>
-        <li><a href="configuracion.html" data-page="configuracion" ${currentPage==='configuracion'?'class="active"':''}><i class="fas fa-cog"></i> Config</a></li>
+        ${navLinks}
         <li><a href="#" onclick="logout();return false;" style="color:#fecaca;"><i class="fas fa-sign-out-alt"></i> Salir</a></li>
       </ul>
     </nav>

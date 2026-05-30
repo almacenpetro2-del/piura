@@ -207,10 +207,16 @@
 
         (async () => {
             if (!(await ensureAuth())) return;
+            if (cannotAccess('gastos')) { window.location.href = 'dashboard.html'; return; }
             const hoy = todayStr();
             document.getElementById('gasFecha').value = hoy;
             document.getElementById('filtDesde').value = hoy.substring(0,7) + '-01';
             document.getElementById('filtHasta').value = hoy;
+            if (!canCreate()) {
+                document.querySelector('.tab[data-section="nuevo"]').style.display = 'none';
+                document.querySelector('.tab[data-section="listado"]').click();
+                document.getElementById('section-nuevo').style.display = 'none';
+            }
         })();
 
         document.querySelectorAll('.tab').forEach(tab => {
@@ -322,7 +328,7 @@
                         <td class="text-right">${formatMoney(g.monto)}</td>
                         <td class="text-right"><strong>${formatMoney(total)}</strong></td>
                         <td class="actions">
-                            <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteGasto(${g.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            ${canDelete() ? `<button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteGasto(${g.id})" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>
                 `}).join('');

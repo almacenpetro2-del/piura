@@ -60,6 +60,7 @@
         tr:hover td { background: #f8fafc; }
         .badge { padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
         .badge-admin { background: #fef3c7; color: #92400e; }
+        .badge-supervisor { background: #d1fae5; color: #065f46; }
         .badge-user { background: #e0e7ff; color: #3730a3; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: all 0.2s; }
@@ -229,8 +230,9 @@
                 <div class="form-group">
                     <label>Rol</label>
                     <select id="newUserRole">
-                        <option value="usuario">Usuario</option>
                         <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="operario">Operario</option>
                     </select>
                 </div>
             </div>
@@ -249,14 +251,14 @@
     createNavbar('configuracion');
 
     let currentUser = null;
-    let isAdmin = false;
     let backupFileData = null;
 
     (async () => {
         if (!(await ensureAuth())) return;
+        if (cannotAccess('config')) { window.location.href = 'dashboard.html'; return; }
         await loadUserInfo();
         await loadConfig();
-        if (isAdmin) {
+        if (isAdmin()) {
             document.getElementById('cardRespaldo').style.display = 'block';
             loadUsers().catch(() => {});
         } else {
@@ -272,11 +274,8 @@
             });
             currentUser = await res.json();
             document.getElementById('loggedUserEmail').textContent = currentUser.email;
-            const perfil = await apiGet('perfiles', `id=eq.${currentUser.id}&limit=1`);
-            if (perfil.length > 0) {
-                isAdmin = perfil[0].rol === 'admin';
-                document.getElementById('loggedUserRole').textContent = isAdmin ? '(Administrador)' : '(Usuario)';
-            }
+            const roles = { admin: 'Administrador', supervisor: 'Supervisor', operario: 'Operario' };
+            document.getElementById('loggedUserRole').textContent = `(${roles[currentUserRole] || 'Usuario'})`;
         } catch (e) { console.error(e); }
     }
 
@@ -351,7 +350,7 @@
                 <tr>
                     <td>${escHtml(u.email)}</td>
                     <td>${escHtml(u.nombre || '—')}</td>
-                    <td><span class="badge ${u.rol==='admin'?'badge-admin':'badge-user'}">${u.rol}</span></td>
+                    <td><span class="badge ${u.rol==='admin'?'badge-admin':u.rol==='supervisor'?'badge-supervisor':'badge-user'}">${u.rol}</span></td>
                     <td>
                         ${u.id !== currentUser.id
                             ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>`
@@ -366,7 +365,7 @@
         document.getElementById('newUserEmail').value = '';
         document.getElementById('newUserName').value = '';
         document.getElementById('newUserPass').value = '';
-        document.getElementById('newUserRole').value = 'usuario';
+        document.getElementById('newUserRole').value = 'operario';
         document.getElementById('modalUser').classList.add('open');
     }
 
