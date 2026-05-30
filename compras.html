@@ -627,10 +627,21 @@
                         <td style="white-space:nowrap;">
                             <button class="btn btn-sm btn-outline" onclick="verDetalle(${c.id})"><i class="fas fa-eye"></i></button>
                             <button class="btn btn-sm btn-outline" onclick="openPagosModalC(${c.id})" title="Pagos"><i class="fas fa-money-bill"></i></button>
+                            <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteCompra(${c.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 `).join('');
             } catch (e) { console.error(e); showToast('Error al cargar compras', 'error'); }
+        }
+
+        async function deleteCompra(id) {
+            if (!confirm('¿Eliminar esta compra y todos sus datos asociados?')) return;
+            try {
+                await apiDeleteWhere('pagos', `tipo=eq.compra&referencia_id=eq.${id}`);
+                await apiDelete('compras', id);
+                await loadCompras();
+                showToast('Compra eliminada', 'success');
+            } catch (e) { showToast('Error al eliminar: ' + e.message, 'error'); }
         }
 
         // ===== VER DETALLE =====

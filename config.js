@@ -174,6 +174,15 @@ async function apiDelete(table, id) {
     if (!res.ok) throw new Error(`Error ${res.status}`);
 }
 
+async function apiDeleteWhere(table, filter) {
+    const token = getAccessToken();
+    const res = await authFetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+        method: 'DELETE',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`Error ${res.status}`);
+}
+
 async function apiRpc(fnName, body = {}) {
     const token = getAccessToken();
     const res = await authFetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
@@ -319,15 +328,21 @@ function formatMoney(n) {
 
 function formatDate(iso) {
     if (!iso) return '';
-    const d = new Date(iso);
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return iso;
+    return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
 function formatDateTime(iso) {
     if (!iso) return '';
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return iso;
+    const datePart = `${m[3]}/${m[2]}/${m[1]}`;
     const d = new Date(iso);
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return iso;
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${datePart} ${hh}:${mm}`;
 }
 
 // ===== TOAST / NOTIFICACIÓN =====

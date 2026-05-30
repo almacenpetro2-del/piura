@@ -162,7 +162,7 @@
             <div class="table-wrap">
                 <table id="tableCaja">
                     <thead><tr>
-                        <th>Tipo</th><th>Fecha</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-right">Saldo Acum.</th>
+                        <th>Tipo</th><th>Fecha</th><th>Descripción</th><th class="text-right">Monto</th><th class="text-right">Saldo Acum.</th><th></th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
@@ -263,28 +263,32 @@
                 compras.forEach(c => {
                     const pagado = parseFloat(c.monto_pagado || 0);
                     if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'compra' && p.referencia_id === c.id))) {
-                        movs.push({
-                            tipo: 'Salida',
-                            tipoBadge: 'badge-salida',
-                            fecha: c.fecha,
-                            descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
-                            monto: -parseFloat(c.total),
-                            montoShow: '- ' + formatMoney(c.total)
-                        });
+                    movs.push({
+                        tipo: 'Salida',
+                        tipoBadge: 'badge-salida',
+                        fecha: c.fecha,
+                        descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
+                        monto: -parseFloat(c.total),
+                        montoShow: '- ' + formatMoney(c.total),
+                        origen_tabla: 'compras',
+                        origen_id: c.id
+                    });
                     }
                 });
 
                 ventas.forEach(v => {
                     const pagado = parseFloat(v.monto_pagado || 0);
                     if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'venta' && p.referencia_id === v.id))) {
-                        movs.push({
-                            tipo: 'Entrada',
-                            tipoBadge: 'badge-entrada',
-                            fecha: v.fecha,
-                            descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
-                            monto: parseFloat(v.total),
-                            montoShow: '+ ' + formatMoney(v.total)
-                        });
+                    movs.push({
+                        tipo: 'Entrada',
+                        tipoBadge: 'badge-entrada',
+                        fecha: v.fecha,
+                        descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
+                        monto: parseFloat(v.total),
+                        montoShow: '+ ' + formatMoney(v.total),
+                        origen_tabla: 'ventas',
+                        origen_id: v.id
+                    });
                     }
                 });
 
@@ -305,7 +309,9 @@
                         fecha: p.fecha,
                         descripcion: descripcion + ' (' + (p.forma_pago || 'efectivo') + ')',
                         monto: esVenta ? monto : -monto,
-                        montoShow: (esVenta ? '+ ' : '- ') + formatMoney(monto)
+                        montoShow: (esVenta ? '+ ' : '- ') + formatMoney(monto),
+                        origen_tabla: 'pagos',
+                        origen_id: p.id
                     });
                 });
 
@@ -317,7 +323,9 @@
                         fecha: g.fecha,
                         descripcion: 'Gasto: ' + (g.descripcion || '—') + ' (' + (g.categoria || 'Varios') + ')',
                         monto: -total,
-                        montoShow: '- ' + formatMoney(total)
+                        montoShow: '- ' + formatMoney(total),
+                        origen_tabla: 'gastos_adicionales',
+                        origen_id: g.id
                     });
                 });
 
@@ -361,12 +369,30 @@
                         <td>${escHtml(m.descripcion)}</td>
                         <td class="text-right ${m.monto >= 0 ? 'text-green' : 'text-red'}">${m.montoShow}</td>
                         <td class="text-right" style="font-weight:600;">${formatMoney(runningBalance)}</td>
+                        <td><button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMovimiento('${m.origen_tabla}',${m.origen_id})" title="Eliminar"><i class="fas fa-trash"></i></button></td>
                     </tr>
                 `}).join('');
             } catch (e) {
                 console.error('Error cargando caja:', e);
                 showToast('Error al cargar datos', 'error');
             }
+        }
+
+        async function deleteMovimiento(origenTabla, origenId) {
+            if (!confirm('¿Eliminar este movimiento permanentemente?')) return;
+            try {
+                if (origenTabla === 'compras') {
+                    await apiDeleteWhere('pagos', `tipo=eq.compra&referencia_id=eq.${origenId}`);
+                    await apiDelete('compras', origenId);
+                } else if (origenTabla === 'ventas') {
+                    await apiDeleteWhere('pagos', `tipo=eq.venta&referencia_id=eq.${origenId}`);
+                    await apiDelete('ventas', origenId);
+                } else {
+                    await apiDelete(origenTabla, origenId);
+                }
+                await loadCaja();
+                showToast('Movimiento eliminado', 'success');
+            } catch (e) { showToast('Error al eliminar: ' + e.message, 'error'); }
         }
 
         function exportarCSV() {

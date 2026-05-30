@@ -703,10 +703,21 @@
                         <td style="white-space:nowrap;">
                             <button class="btn btn-sm btn-outline" onclick="verDetalleV(${v.id})"><i class="fas fa-eye"></i></button>
                             <button class="btn btn-sm btn-outline" onclick="openPagosModalV(${v.id})" title="Pagos"><i class="fas fa-money-bill"></i></button>
+                            <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="deleteVenta(${v.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 `).join('');
             } catch (e) { console.error(e); showToast('Error al cargar ventas', 'error'); }
+        }
+
+        async function deleteVenta(id) {
+            if (!confirm('¿Eliminar esta venta y todos sus datos asociados?')) return;
+            try {
+                await apiDeleteWhere('pagos', `tipo=eq.venta&referencia_id=eq.${id}`);
+                await apiDelete('ventas', id);
+                await loadVentas();
+                showToast('Venta eliminada', 'success');
+            } catch (e) { showToast('Error al eliminar: ' + e.message, 'error'); }
         }
 
         async function verDetalleV(ventaId) {
