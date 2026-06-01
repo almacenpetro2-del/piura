@@ -155,7 +155,7 @@
                     </div>
                     <div class="form-group">
                         <label>IVA (%)</label>
-                        <input type="number" id="ventIvaPorc" value="21" step="1" min="0" max="100">
+                        <input type="number" id="ventIvaPorc" value="0" step="1" min="0" max="100">
                     </div>
                 </div>
                 <div class="form-grid" style="margin-top:4px;">
@@ -652,7 +652,7 @@
         function resetFormVenta() {
             document.getElementById('ventCliente').value = '';
             document.getElementById('ventFecha').value = todayStr();
-            document.getElementById('ventIvaPorc').value = '21';
+            document.getElementById('ventIvaPorc').value = '0';
             document.getElementById('ventPagado').value = '';
             document.getElementById('ventFormaPago').value = 'efectivo';
             document.getElementById('txtPagadoV').textContent = 'S/ 0.00';
@@ -721,6 +721,10 @@
         async function deleteVenta(id) {
             if (!confirm('¿Eliminar esta venta y todos sus datos asociados?')) return;
             try {
+                const detalles = await apiGet('detalle_ventas', `venta_id=eq.${id}`);
+                for (const d of detalles) {
+                    await updateStock(d.tipo_chatarra_id, d.cantidad);
+                }
                 await apiDeleteWhere('pagos', `tipo=eq.venta&referencia_id=eq.${id}`);
                 await apiDelete('ventas', id);
                 await loadVentas();

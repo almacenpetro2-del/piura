@@ -166,7 +166,7 @@
                     </div>
                     <div class="form-group">
                         <label>IVA (%)</label>
-                        <input type="number" id="compIvaPorc" value="21" step="1" min="0" max="100">
+                        <input type="number" id="compIvaPorc" value="0" step="1" min="0" max="100">
                     </div>
                 </div>
                 <div class="form-grid" style="margin-top:4px;">
@@ -575,7 +575,7 @@
         function resetForm() {
             document.getElementById('compProveedor').value = '';
             document.getElementById('compFecha').value = todayStr();
-            document.getElementById('compIvaPorc').value = '21';
+            document.getElementById('compIvaPorc').value = '0';
             document.getElementById('detailRows').innerHTML = '';
             document.getElementById('compPagado').value = '';
             document.getElementById('compFormaPago').value = 'efectivo';
@@ -645,6 +645,10 @@
         async function deleteCompra(id) {
             if (!confirm('¿Eliminar esta compra y todos sus datos asociados?')) return;
             try {
+                const detalles = await apiGet('detalle_compras', `compra_id=eq.${id}`);
+                for (const d of detalles) {
+                    await updateStock(d.tipo_chatarra_id, -d.cantidad);
+                }
                 await apiDeleteWhere('pagos', `tipo=eq.compra&referencia_id=eq.${id}`);
                 await apiDelete('compras', id);
                 await loadCompras();
