@@ -315,7 +315,7 @@
                 if (currentProductId) stockQuery += `&tipo_chatarra_id=eq.${currentProductId}`;
                 const stock = await apiGet('stock', stockQuery);
                 const totalStock = stock.reduce((sum, s) => sum + parseFloat(s.cantidad), 0);
-                document.getElementById('statStock').textContent = formatNum(totalStock, 0);
+                document.getElementById('statStock').textContent = formatNum(totalStock, 2);
 
                 // Compras in period
                 let comprasQuery = `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total`;
@@ -441,7 +441,7 @@
                     <div class="product-mini-card">
                         <div class="pmc-name">${escHtml(a.nombre)}</div>
                         <div class="pmc-stats">
-                            <div class="pmc-stat"><div class="pmc-val">${formatNum(a.stock, 0)}</div><div class="pmc-lbl">Stock kg</div></div>
+                            <div class="pmc-stat"><div class="pmc-val">${formatNum(a.stock, 2)}</div><div class="pmc-lbl">Stock kg</div></div>
                             <div class="pmc-stat"><div class="pmc-val" style="color:#2563eb;">${formatNum(a.compraKg, 0)}</div><div class="pmc-lbl">Comprado kg</div></div>
                             <div class="pmc-stat"><div class="pmc-val" style="color:#d97706;">${formatNum(a.ventaKg, 0)}</div><div class="pmc-lbl">Vendido kg</div></div>
                             <div class="pmc-stat"><div class="pmc-val" style="color:${a.ganancia>=0?'var(--primary)':'var(--danger)'};">${formatMoney(a.ganancia)}</div><div class="pmc-lbl">Ganancia</div></div>

@@ -19,7 +19,7 @@ CREATE TABLE public.perfiles (
 CREATE TABLE public.tipos_chatarra (
   id BIGSERIAL PRIMARY KEY,
   nombre TEXT NOT NULL,
-  unidad_medida TEXT NOT NULL DEFAULT 'kg' CHECK (unidad_medida IN ('kg','tonelada')),
+  unidad_medida TEXT NOT NULL DEFAULT 'kg' CHECK (unidad_medida IN ('kg','tonelada','und')),
   activo BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

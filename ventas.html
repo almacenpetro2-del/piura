@@ -442,7 +442,7 @@
                 const stockSpan = row.querySelector('.stock-info');
                 if (stockSpan && matId) {
                     const disp = stockMap[matId] || 0;
-                    stockSpan.textContent = `Disponible: ${formatNum(disp, 0)}`;
+                    stockSpan.textContent = `Disponible: ${formatNum(disp, 2)}`;
                     stockSpan.className = 'stock-info' + (disp <= 0 ? ' stock-low' : '');
                 }
                 if (!matId && stockSpan) stockSpan.textContent = '';
@@ -488,8 +488,8 @@
             const row = sel.closest('tr');
 
             const disp = matId ? (stockMap[matId] || 0) : 0;
-            row.querySelector('.td-stock-disp').textContent = matId ? formatNum(disp, 0) : '—';
-            row.querySelector('.stock-info').textContent = matId ? `Disponible: ${formatNum(disp, 0)}` : '';
+            row.querySelector('.td-stock-disp').textContent = matId ? formatNum(disp, 2) : '—';
+            row.querySelector('.stock-info').textContent = matId ? `Disponible: ${formatNum(disp, 2)}` : '';
             if (matId && disp <= 0) {
                 row.querySelector('.stock-info').className = 'stock-info stock-low';
             }
@@ -583,7 +583,7 @@
                 const disp = stockMap[row.material_id] || 0;
                 if (row.cantidad > disp) {
                     const mat = matVenta.find(m => m.id == row.material_id);
-                    showToast(`Stock insuficiente para "${mat?.nombre || row.material_id}". Disponible: ${formatNum(disp, 0)}`, 'error');
+                    showToast(`Stock insuficiente para "${mat?.nombre || row.material_id}". Disponible: ${formatNum(disp, 2)}`, 'error');
                     return;
                 }
             }

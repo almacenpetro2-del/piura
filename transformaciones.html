@@ -344,8 +344,8 @@
             const stockDisp = row.querySelector('.td-stock-e');
             if (matId) {
                 const disp = stockMap[matId] || 0;
-                if (stockSpan) { stockSpan.textContent = `Disponible: ${formatNum(disp, 0)}`; stockSpan.className = 'stock-info' + (disp <= 0 ? ' stock-low' : ''); }
-                if (stockDisp) stockDisp.textContent = formatNum(disp, 0);
+                if (stockSpan) { stockSpan.textContent = `Disponible: ${formatNum(disp, 2)}`; stockSpan.className = 'stock-info' + (disp <= 0 ? ' stock-low' : ''); }
+                if (stockDisp) stockDisp.textContent = formatNum(disp, 2);
             } else {
                 if (stockSpan) { stockSpan.textContent = ''; stockSpan.className = 'stock-info'; }
                 if (stockDisp) stockDisp.textContent = '—';
@@ -389,9 +389,9 @@
         const costoInp = row.querySelector('.inp-costo-e');
 
         const disp = matId ? (stockMap[matId] || 0) : 0;
-        if (stockDisp) stockDisp.textContent = matId ? formatNum(disp, 0) : '—';
+        if (stockDisp) stockDisp.textContent = matId ? formatNum(disp, 2) : '—';
         if (stockSpan) {
-            stockSpan.textContent = matId ? `Disponible: ${formatNum(disp, 0)}` : '';
+            stockSpan.textContent = matId ? `Disponible: ${formatNum(disp, 2)}` : '';
             stockSpan.className = 'stock-info' + (disp <= 0 ? ' stock-low' : '');
         }
 
@@ -550,7 +550,7 @@
             const disp = stockMap[e.material_id] || 0;
             if (e.cantidad > disp) {
                 const mat = materiales.find(m => m.id == e.material_id);
-                showToast(`Stock insuficiente de "${mat?.nombre || e.material_id}". Disponible: ${formatNum(disp, 0)} kg.`, 'error');
+                showToast(`Stock insuficiente de "${mat?.nombre || e.material_id}". Disponible: ${formatNum(disp, 2)} kg.`, 'error');
                 return;
             }
         }

@@ -203,6 +203,7 @@
                     <select id="chatUnidad">
                         <option value="kg">Kilogramo (kg)</option>
                         <option value="tonelada">Tonelada</option>
+                        <option value="und">Unidad (UND)</option>
                     </select>
                 </div>
             </div>
@@ -324,7 +325,7 @@
                 <tr>
                     <td><strong>${escHtml(c.nombre)}</strong></td>
                     <td>${c.unidad_medida}</td>
-                    <td>${formatNum(stockMap[c.id] || 0, 0)} ${c.unidad_medida}</td>
+                    <td>${formatNum(stockMap[c.id] || 0, 2)} ${c.unidad_medida}</td>
                     <td class="actions">
                         ${canEdit() ? `<button class="btn btn-sm btn-outline" onclick="editChatarra(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>` : ''}
                         ${canDelete() ? `<button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="confirmDelete(${c.id},'chatarra','${escHtml(c.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
