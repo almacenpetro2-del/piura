@@ -383,9 +383,17 @@
             if (!confirm('¿Eliminar este movimiento permanentemente?')) return;
             try {
                 if (origenTabla === 'compras') {
+                    const detalles = await apiGet('detalle_compras', `compra_id=eq.${origenId}`);
+                    for (const d of detalles) {
+                        await updateStock(d.tipo_chatarra_id, -d.cantidad);
+                    }
                     await apiDeleteWhere('pagos', `tipo=eq.compra&referencia_id=eq.${origenId}`);
                     await apiDelete('compras', origenId);
                 } else if (origenTabla === 'ventas') {
+                    const detalles = await apiGet('detalle_ventas', `venta_id=eq.${origenId}`);
+                    for (const d of detalles) {
+                        await updateStock(d.tipo_chatarra_id, d.cantidad);
+                    }
                     await apiDeleteWhere('pagos', `tipo=eq.venta&referencia_id=eq.${origenId}`);
                     await apiDelete('ventas', origenId);
                 } else {
