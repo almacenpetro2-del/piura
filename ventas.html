@@ -538,7 +538,7 @@
                     ganancia += (precio - costo) * cant;
                 }
             });
-            const ivaP = parseFloat(document.getElementById('ventIvaPorc').value) || 0;
+            const ivaP = parseFloat(document.getElementById('ventIvaPorc')?.value) || 0;
             const iva = subtotal * (ivaP / 100);
             document.getElementById('txtSubtotalV').textContent = formatMoney(subtotal);
             document.getElementById('txtIvaV').textContent = formatMoney(iva);
@@ -552,12 +552,14 @@
 
         function updateSaldoVenta() {
             const totalEl = document.getElementById('txtTotalV');
-            const totalText = totalEl.textContent.replace('S/ ', '').replace(/,/g, '');
+            const totalText = (totalEl?.textContent || '').replace('S/ ', '').replace(/,/g, '');
             const total = parseFloat(totalText) || 0;
-            const pagado = parseFloat(document.getElementById('ventPagado').value) || 0;
-            document.getElementById('txtPagadoV').textContent = formatMoney(pagado);
+            const pagado = parseFloat(document.getElementById('ventPagado')?.value) || 0;
+            const txtPagado = document.getElementById('txtPagadoV');
+            const saldoPend = document.getElementById('ventSaldoPendiente');
+            if (txtPagado) txtPagado.textContent = formatMoney(pagado);
             const saldo = total - pagado;
-            document.getElementById('ventSaldoPendiente').value = formatMoney(saldo >= 0 ? saldo : 0);
+            if (saldoPend) saldoPend.value = formatMoney(saldo >= 0 ? saldo : 0);
         }
 
         async function saveVenta() {
@@ -666,7 +668,7 @@
             const tbody = document.querySelector('#tableVentas tbody');
             const empty = document.getElementById('ventasEmpty');
             try {
-                let query = 'select=*,clientes_proveedores(nombre)&order=fecha.desc&limit=200';
+                let query = 'select=*,clientes_proveedores(nombre)&order=fecha.desc&limit=1000';
                 const desde = document.getElementById('filtFechaDesdeV').value;
                 const hasta = document.getElementById('filtFechaHastaV').value;
                 const filtroCli = document.getElementById('filtCliente').value;
@@ -719,9 +721,16 @@
         }
 
         async function deleteVenta(id) {
-            if (!confirm('¿Eliminar esta venta y todos sus datos asociados?')) return;
+            if (!confirm('¿Eliminar esta venta y todos sus datos asociados?\n\nSe revertira el stock. Si el material ya fue transformado, el stock quedara inconsistente.')) return;
             try {
                 const detalles = await apiGet('detalle_ventas', `venta_id=eq.${id}`);
+                for (const d of detalles) {
+                    const transformadoDesde = await apiGet('detalle_transformacion_salida', `tipo_chatarra_id=eq.${d.tipo_chatarra_id}&limit=1`);
+                    if (transformadoDesde.length > 0) {
+                        if (!confirm('ADVERTENCIA: Este tipo de material fue producido en transformaciones. Si eliminas la venta, el stock asociado quedara inconsistente.\n\n¿Continuar de todas formas?')) return;
+                        break;
+                    }
+                }
                 for (const d of detalles) {
                     await updateStock(d.tipo_chatarra_id, d.cantidad);
                 }

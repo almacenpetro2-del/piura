@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — Khloe Global</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="lib/chart.umd.min.js"></script>
     <style>
         :root {
             --primary: #059669; --primary-dark: #047857; --primary-light: #ecfdf5;
@@ -318,34 +318,32 @@
                 document.getElementById('statStock').textContent = formatNum(totalStock, 2);
 
                 // Compras in period
-                let comprasQuery = `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total`;
+                let compras;
                 if (currentProductId) {
                     const compIds = await getComprasIdsConProducto(desde, hasta, currentProductId);
-                    if (compIds.length > 0) comprasQuery += `&id=in.(${compIds.join(',')})`;
-                }
-                const comprasData = await apiGet('compras', comprasQuery);
-                let compras;
-                if (currentProductId && comprasData.length === 0 && !comprasQuery.includes('id=in')) {
-                    compras = [];
+                    if (compIds.length > 0) {
+                        compras = await apiGet('compras', `id=in.(${compIds.join(',')})&select=id,total,iva`);
+                    } else {
+                        compras = [];
+                    }
                 } else {
-                    compras = comprasData;
+                    compras = await apiGet('compras', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total,iva`);
                 }
                 const totalCompras = compras.reduce((sum, c) => sum + parseFloat(c.total), 0);
                 document.getElementById('statCompras').textContent = formatMoney(totalCompras);
                 document.getElementById('statComprasCant').textContent = `${compras.length} operaciones`;
 
                 // Ventas in period
-                let ventasQuery = `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total,ganancia`;
+                let ventas;
                 if (currentProductId) {
                     const ventIds = await getVentasIdsConProducto(desde, hasta, currentProductId);
-                    if (ventIds.length > 0) ventasQuery += `&id=in.(${ventIds.join(',')})`;
-                }
-                const ventasData = await apiGet('ventas', ventasQuery);
-                let ventas;
-                if (currentProductId && ventasData.length === 0 && !ventasQuery.includes('id=in')) {
-                    ventas = [];
+                    if (ventIds.length > 0) {
+                        ventas = await apiGet('ventas', `id=in.(${ventIds.join(',')})&select=id,total,ganancia`);
+                    } else {
+                        ventas = [];
+                    }
                 } else {
-                    ventas = ventasData;
+                    ventas = await apiGet('ventas', `fecha=gte.${desde}&fecha=lt.${hasta}&select=id,total,ganancia`);
                 }
                 const totalVentas = ventas.reduce((sum, v) => sum + parseFloat(v.total), 0);
                 document.getElementById('statVentas').textContent = formatMoney(totalVentas);
@@ -354,7 +352,8 @@
                 // Ganancia
                 const totalGanancia = ventas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
                 document.getElementById('statGanancia').textContent = formatMoney(totalGanancia);
-                const margen = totalVentas > 0 ? (totalGanancia / (totalVentas / 1.21) * 100) : 0;
+                const costoEstimado = compras.reduce((sum, c) => sum + parseFloat(c.total - c.iva || c.total), 0);
+                const margen = costoEstimado > 0 ? (totalGanancia / costoEstimado * 100) : 0;
                 document.getElementById('statGananciaMargen').textContent = `Margen aprox: ${formatNum(margen, 1)}%`;
             } catch (e) {
                 console.error('Error cargando stats:', e);

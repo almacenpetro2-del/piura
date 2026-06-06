@@ -491,18 +491,18 @@
             const diff = Math.abs(totalCantE - totalCantS);
             if (diff < 0.001) {
                 matchIcon.style.color = 'var(--primary)';
-                matchIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                matchIcon.className = 'fas fa-check-circle';
                 matchIcon.title = 'Iguales — sin merma';
                 summaryBox.style.borderColor = 'rgba(5,150,105,0.4)';
             } else {
                 matchIcon.style.color = 'var(--danger)';
-                matchIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                matchIcon.className = 'fas fa-exclamation-triangle';
                 matchIcon.title = `Diferencia: ${formatNum(totalCantE - totalCantS, 2)} kg`;
                 summaryBox.style.borderColor = 'rgba(220,38,38,0.3)';
             }
         } else {
             matchIcon.style.color = 'var(--text-light)';
-            matchIcon.innerHTML = '<i class="fas fa-minus"></i>';
+            matchIcon.className = 'fas fa-minus';
             summaryBox.style.borderColor = 'rgba(5,150,105,0.2)';
         }
     }
@@ -623,7 +623,7 @@
         const tbody = document.querySelector('#tableHistorial tbody');
         const empty = document.getElementById('historialEmpty');
         try {
-            let query = 'select=*&order=fecha.desc&limit=100';
+            let query = 'select=*&order=fecha.desc&limit=200';
             const desde = document.getElementById('filtFechaDesdeT').value;
             const hasta = document.getElementById('filtFechaHastaT').value;
             if (desde) query += `&fecha=gte.${desde}T00:00:00`;
@@ -633,22 +633,27 @@
             if (data.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
             empty.style.display = 'none';
 
-            // Get counts for each transformation
-            const tbodyHtml = [];
-            for (const t of data) {
-                const entradas = await apiGet('detalle_transformacion_entrada', `transformacion_id=eq.${t.id}&select=id`);
-                const salidas = await apiGet('detalle_transformacion_salida', `transformacion_id=eq.${t.id}&select=id`);
-                tbodyHtml.push(`
-                    <tr>
-                        <td>#${t.id}</td>
-                        <td>${formatDateTime(t.fecha)}</td>
-                        <td>${escHtml(t.descripcion || '—')}</td>
-                        <td>${entradas.length} material(es)</td>
-                        <td>${salidas.length} material(es)</td>
-                        <td><button class="btn btn-sm btn-outline" onclick="verDetalleT(${t.id})"><i class="fas fa-eye"></i></button></td>
-                    </tr>
-                `);
-            }
+            const ids = data.map(t => t.id);
+            const [entradasTodos, salidasTodos] = await Promise.all([
+                apiGet('detalle_transformacion_entrada', `transformacion_id=in.(${ids.join(',')})&select=transformacion_id`),
+                apiGet('detalle_transformacion_salida', `transformacion_id=in.(${ids.join(',')})&select=transformacion_id`)
+            ]);
+
+            const entradasCount = {};
+            entradasTodos.forEach(e => { entradasCount[e.transformacion_id] = (entradasCount[e.transformacion_id] || 0) + 1; });
+            const salidasCount = {};
+            salidasTodos.forEach(s => { salidasCount[s.transformacion_id] = (salidasCount[s.transformacion_id] || 0) + 1; });
+
+            const tbodyHtml = data.map(t => `
+                <tr>
+                    <td>#${t.id}</td>
+                    <td>${formatDateTime(t.fecha)}</td>
+                    <td>${escHtml(t.descripcion || '—')}</td>
+                    <td>${entradasCount[t.id] || 0} material(es)</td>
+                    <td>${salidasCount[t.id] || 0} material(es)</td>
+                    <td><button class="btn btn-sm btn-outline" onclick="verDetalleT(${t.id})"><i class="fas fa-eye"></i></button></td>
+                </tr>
+            `);
             tbody.innerHTML = tbodyHtml.join('');
         } catch (e) { console.error(e); showToast('Error al cargar historial', 'error'); }
     }

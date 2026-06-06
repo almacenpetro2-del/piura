@@ -463,12 +463,15 @@
         }
 
         function updateSaldoCompra() {
-            const totalText = document.getElementById('txtTotal').textContent.replace('S/ ', '').replace(/,/g, '');
+            const totalEl = document.getElementById('txtTotal');
+            const totalText = (totalEl?.textContent || '').replace('S/ ', '').replace(/,/g, '');
             const total = parseFloat(totalText) || 0;
-            const pagado = parseFloat(document.getElementById('compPagado').value) || 0;
-            document.getElementById('txtPagado').textContent = formatMoney(pagado);
+            const pagado = parseFloat(document.getElementById('compPagado')?.value) || 0;
+            const txtPagado = document.getElementById('txtPagado');
+            const saldoPend = document.getElementById('compSaldoPendiente');
+            if (txtPagado) txtPagado.textContent = formatMoney(pagado);
             const saldo = total - pagado;
-            document.getElementById('compSaldoPendiente').value = formatMoney(saldo >= 0 ? saldo : 0);
+            if (saldoPend) saldoPend.value = formatMoney(saldo >= 0 ? saldo : 0);
         }
 
         // ===== RECALC =====
@@ -481,7 +484,7 @@
                 row.querySelector('.td-subtotal').textContent = formatMoney(sub);
                 if (cant > 0 && precio > 0) subtotal += sub;
             });
-            const ivaPct = parseFloat(document.getElementById('compIvaPorc').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('compIvaPorc')?.value) || 0;
             const iva = subtotal * (ivaPct / 100);
             const total = subtotal + iva;
 
@@ -490,7 +493,7 @@
             document.getElementById('txtTotal').textContent = formatMoney(total);
             updateSaldoCompra();
         }
-        document.getElementById('compIvaPorc').addEventListener('input', recalcAll);
+        document.getElementById('compIvaPorc')?.addEventListener('input', recalcAll);
 
         // ===== SAVE COMPRA =====
         async function saveCompra() {
@@ -512,7 +515,7 @@
             });
             if (rows.length === 0) { showToast('Agregá al menos un ítem con cantidad y precio', 'error'); return; }
 
-            const ivaPct = parseFloat(document.getElementById('compIvaPorc').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('compIvaPorc')?.value) || 0;
             const subtotal = rows.reduce((s, r) => s + r.subtotal, 0);
             const iva = subtotal * ivaPct / 100;
             const total = subtotal + iva;
@@ -575,7 +578,8 @@
         function resetForm() {
             document.getElementById('compProveedor').value = '';
             document.getElementById('compFecha').value = todayStr();
-            document.getElementById('compIvaPorc').value = '0';
+            var ivaEl = document.getElementById('compIvaPorc');
+            if (ivaEl) ivaEl.value = '0';
             document.getElementById('detailRows').innerHTML = '';
             document.getElementById('compPagado').value = '';
             document.getElementById('compFormaPago').value = 'efectivo';
@@ -590,7 +594,7 @@
             const tbody = document.querySelector('#tableCompras tbody');
             const empty = document.getElementById('comprasEmpty');
             try {
-                let query = 'select=*,clientes_proveedores(nombre)&order=fecha.desc&limit=200';
+                let query = 'select=*,clientes_proveedores(nombre)&order=fecha.desc&limit=1000';
                 const desde = document.getElementById('filtFechaDesde').value;
                 const hasta = document.getElementById('filtFechaHasta').value;
                 const filtroProv = document.getElementById('filtProveedor').value;
@@ -643,9 +647,16 @@
         }
 
         async function deleteCompra(id) {
-            if (!confirm('¿Eliminar esta compra y todos sus datos asociados?')) return;
+            if (!confirm('¿Eliminar esta compra y todos sus datos asociados?\n\nSe revertira el stock. Si el material ya fue transformado o vendido, el stock quedara inconsistente.')) return;
             try {
                 const detalles = await apiGet('detalle_compras', `compra_id=eq.${id}`);
+                for (const d of detalles) {
+                    const usadoEnTransf = await apiGet('detalle_transformacion_entrada', `tipo_chatarra_id=eq.${d.tipo_chatarra_id}&limit=1`);
+                    if (usadoEnTransf.length > 0) {
+                        if (!confirm('ADVERTENCIA: Este material fue usado en transformaciones. Si eliminas la compra, el stock asociado quedara inconsistente.\n\n¿Continuar de todas formas?')) return;
+                        break;
+                    }
+                }
                 for (const d of detalles) {
                     await updateStock(d.tipo_chatarra_id, -d.cantidad);
                 }

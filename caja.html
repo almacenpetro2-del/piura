@@ -262,15 +262,14 @@
                 let movs = [];
 
                 compras.forEach(c => {
-                    const pagado = parseFloat(c.monto_pagado || 0);
-                    if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'compra' && p.referencia_id === c.id))) {
+                    if (!pagos || !pagos.some(p => p.tipo === 'compra' && p.referencia_id === c.id)) {
                     movs.push({
                         tipo: 'Salida',
                         tipoBadge: 'badge-salida',
                         fecha: c.fecha,
                         descripcion: 'Compra #' + c.id + ' — ' + (c.clientes_proveedores?.nombre || '—'),
-                        monto: -parseFloat(c.total),
-                        montoShow: '- ' + formatMoney(c.total),
+                        monto: -parseFloat(c.total - (c.monto_pagado || 0)),
+                        montoShow: '- ' + formatMoney(c.total - (c.monto_pagado || 0)),
                         origen_tabla: 'compras',
                         origen_id: c.id
                     });
@@ -278,15 +277,14 @@
                 });
 
                 ventas.forEach(v => {
-                    const pagado = parseFloat(v.monto_pagado || 0);
-                    if (pagado === 0 && (!pagos || !pagos.some(p => p.tipo === 'venta' && p.referencia_id === v.id))) {
+                    if (!pagos || !pagos.some(p => p.tipo === 'venta' && p.referencia_id === v.id)) {
                     movs.push({
                         tipo: 'Entrada',
                         tipoBadge: 'badge-entrada',
                         fecha: v.fecha,
                         descripcion: 'Venta #' + v.id + ' — ' + (v.clientes_proveedores?.nombre || '—'),
-                        monto: parseFloat(v.total),
-                        montoShow: '+ ' + formatMoney(v.total),
+                        monto: parseFloat(v.total - (v.monto_pagado || 0)),
+                        montoShow: '+ ' + formatMoney(v.total - (v.monto_pagado || 0)),
                         origen_tabla: 'ventas',
                         origen_id: v.id
                     });
@@ -385,6 +383,13 @@
                 if (origenTabla === 'compras') {
                     const detalles = await apiGet('detalle_compras', `compra_id=eq.${origenId}`);
                     for (const d of detalles) {
+                        const usadoEnTransf = await apiGet('detalle_transformacion_entrada', `tipo_chatarra_id=eq.${d.tipo_chatarra_id}&limit=1`);
+                        if (usadoEnTransf.length > 0) {
+                            if (!confirm('ADVERTENCIA: Este material fue usado en transformaciones. El stock quedara inconsistente.\n\n¿Continuar?')) return;
+                            break;
+                        }
+                    }
+                    for (const d of detalles) {
                         await updateStock(d.tipo_chatarra_id, -d.cantidad);
                     }
                     await apiDeleteWhere('pagos', `tipo=eq.compra&referencia_id=eq.${origenId}`);
@@ -392,10 +397,30 @@
                 } else if (origenTabla === 'ventas') {
                     const detalles = await apiGet('detalle_ventas', `venta_id=eq.${origenId}`);
                     for (const d of detalles) {
+                        const transformadoDesde = await apiGet('detalle_transformacion_salida', `tipo_chatarra_id=eq.${d.tipo_chatarra_id}&limit=1`);
+                        if (transformadoDesde.length > 0) {
+                            if (!confirm('ADVERTENCIA: Este material fue producido en transformaciones. El stock quedara inconsistente.\n\n¿Continuar?')) return;
+                            break;
+                        }
+                    }
+                    for (const d of detalles) {
                         await updateStock(d.tipo_chatarra_id, d.cantidad);
                     }
                     await apiDeleteWhere('pagos', `tipo=eq.venta&referencia_id=eq.${origenId}`);
                     await apiDelete('ventas', origenId);
+                } else if (origenTabla === 'pagos') {
+                    const pago = await apiGetSingle('pagos', `id=eq.${origenId}`);
+                    if (pago) {
+                        const tablaRef = pago.tipo === 'venta' ? 'ventas' : 'compras';
+                        const ref = await apiGetSingle(tablaRef, `id=eq.${pago.referencia_id}&select=id,total`);
+                        await apiDelete('pagos', origenId);
+                        if (ref) {
+                            const pagosRestantes = await apiGet('pagos', `tipo=eq.${pago.tipo}&referencia_id=eq.${pago.referencia_id}&select=monto`);
+                            const totalPagado = pagosRestantes.reduce((s, p) => s + parseFloat(p.monto), 0);
+                            const estado = totalPagado >= parseFloat(ref.total) ? 'cancelado' : (totalPagado > 0 ? 'parcial' : 'pendiente');
+                            await apiPatch(tablaRef, pago.referencia_id, { monto_pagado: totalPagado, estado });
+                        }
+                    }
                 } else {
                     await apiDelete(origenTabla, origenId);
                 }

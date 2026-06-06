@@ -279,7 +279,7 @@
 
             try {
                 let compras = [], ventas = [];
-                const queryBase = `fecha=gte.${desde}T00:00:00&fecha=lt.${hasta}T23:59:59&order=fecha.desc&limit=200`;
+                const queryBase = `fecha=gte.${desde}T00:00:00&fecha=lt.${hasta}T23:59:59&order=fecha.desc&limit=1000`;
 
                 if (tipo === 'todos' || tipo === 'compra') {
                     compras = await apiGet('compras', queryBase + '&select=id,fecha,subtotal,iva,total,proveedor_id,clientes_proveedores(nombre)');
@@ -380,7 +380,7 @@
         async function loadDeudas() {
             try {
                 // Cuentas por cobrar (clientes)
-                const ventasAll = await apiGet('ventas', 'select=id,total,monto_pagado,estado,cliente_id,clientes_proveedores(nombre)&order=fecha.desc&limit=500');
+                const ventasAll = await apiGet('ventas', 'select=id,total,monto_pagado,estado,cliente_id,clientes_proveedores(nombre)&order=fecha.desc&limit=2000');
                 const clientesMap = {};
                 ventasAll.forEach(v => {
                     const key = v.cliente_id;
@@ -411,7 +411,7 @@
                 }
 
                 // Cuentas por pagar (proveedores)
-                const comprasAll = await apiGet('compras', 'select=id,total,monto_pagado,estado,proveedor_id,clientes_proveedores(nombre)&order=fecha.desc&limit=500');
+                const comprasAll = await apiGet('compras', 'select=id,total,monto_pagado,estado,proveedor_id,clientes_proveedores(nombre)&order=fecha.desc&limit=2000');
                 const proveedoresMap = {};
                 comprasAll.forEach(c => {
                     const key = c.proveedor_id;

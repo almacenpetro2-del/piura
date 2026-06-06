@@ -276,12 +276,12 @@
             const totalsContainer = document.getElementById('totalsContainer');
 
             try {
-                let query = 'order=fecha.desc&limit=200';
+                let query = 'order=fecha.desc&limit=1000';
                 const desde = document.getElementById('filtDesde').value;
                 const hasta = document.getElementById('filtHasta').value;
                 const buscar = document.getElementById('filtBuscar').value.trim().toLowerCase();
 
-                if (desde) query += `&fecha=gte.${desde}`;
+                if (desde) query += `&fecha=gte.${desde}T00:00:00`;
                 if (hasta) query += `&fecha=lt.${hasta}T23:59:59`;
 
                 const data = await apiGet('gastos_adicionales', query);

@@ -82,7 +82,7 @@ async function loadUserRole() {
         if (!res.ok) return;
         const user = await res.json();
         const perfil = await apiGet('perfiles', `id=eq.${user.id}&limit=1`);
-        currentUserRole = perfil.length > 0 ? perfil[0].rol : null;
+        currentUserRole = perfil.length > 0 ? perfil[0].rol : 'operario';
     } catch (e) {
         console.warn('Error cargando rol:', e.message);
     }

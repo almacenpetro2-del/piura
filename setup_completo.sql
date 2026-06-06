@@ -12,7 +12,7 @@ CREATE TABLE public.perfiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   nombre TEXT DEFAULT '',
-  rol TEXT NOT NULL DEFAULT 'usuario' CHECK (rol IN ('admin','usuario')),
+  rol TEXT NOT NULL DEFAULT 'operario' CHECK (rol IN ('admin','supervisor','operario')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

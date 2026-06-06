@@ -388,8 +388,19 @@
             if (!res.ok) { const err = await res.json(); throw new Error(err.msg || 'Error al crear usuario'); }
             const userData = await res.json();
             if (userData.user) {
-                await new Promise(r => setTimeout(r, 500));
-                await apiPatch('perfiles', userData.user.id, { rol, nombre });
+                let perfilCreado = false;
+                for (let intento = 0; intento < 10; intento++) {
+                    await new Promise(r => setTimeout(r, 800));
+                    const check = await apiGet('perfiles', `id=eq.${userData.user.id}&limit=1`);
+                    if (check.length > 0) {
+                        await apiPatch('perfiles', userData.user.id, { rol, nombre });
+                        perfilCreado = true;
+                        break;
+                    }
+                }
+                if (!perfilCreado) {
+                    showToast('Usuario creado pero no se pudo asignar rol. Verificá manualmente en BD.', 'error');
+                }
             }
             closeModal();
             await loadUsers();
@@ -418,7 +429,7 @@
                 compras, detCompras,
                 ventas, detVentas,
                 transformaciones, detTransfE, detTransfS,
-                stock, gastos, historico, config
+                stock, gastos, historico, config, pagos
             ] = await Promise.all([
                 apiGet('perfiles', 'select=*'),
                 apiGet('tipos_chatarra', 'select=*'),
@@ -433,7 +444,8 @@
                 apiGet('stock', 'select=*'),
                 apiGet('gastos_adicionales', 'select=*'),
                 apiGet('historico_precios', 'select=*'),
-                apiGet('configuracion', 'select=*')
+                apiGet('configuracion', 'select=*'),
+                apiGet('pagos', 'select=*')
             ]);
 
             const backup = {
@@ -445,7 +457,7 @@
                     compras, detalle_compras: detCompras,
                     ventas, detalle_ventas: detVentas,
                     transformaciones, detalle_transformacion_entrada: detTransfE, detalle_transformacion_salida: detTransfS,
-                    stock, gastos_adicionales: gastos, historico_precios: historico, configuracion: config
+                    stock, gastos_adicionales: gastos, historico_precios: historico, configuracion: config, pagos
                 }
             };
 
@@ -512,6 +524,7 @@
         btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restaurando...';
 
         const orden = [
+            { key: 'perfiles', table: 'perfiles' },
             { key: 'tipos_chatarra', table: 'tipos_chatarra' },
             { key: 'clientes_proveedores', table: 'clientes_proveedores' },
             { key: 'configuracion', table: 'configuracion' },
@@ -523,6 +536,7 @@
             { key: 'transformaciones', table: 'transformaciones' },
             { key: 'detalle_transformacion_entrada', table: 'detalle_transformacion_entrada' },
             { key: 'detalle_transformacion_salida', table: 'detalle_transformacion_salida' },
+            { key: 'pagos', table: 'pagos' },
             { key: 'gastos_adicionales', table: 'gastos_adicionales' },
             { key: 'historico_precios', table: 'historico_precios' }
         ];
